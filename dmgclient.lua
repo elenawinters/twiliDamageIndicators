@@ -61,7 +61,11 @@ function MergeVehicleHealths(veh)
         -- print(i)
         wheel_healths = wheel_healths + GetVehicleWheelHealth(veh, i)
     end
-    return GetVehicleBodyHealth(veh) + GetVehicleEngineHealth(veh) + GetVehiclePetrolTankHealth(veh) + wheel_healths
+    local heli_healths = 0
+    if GetVehicleClass(veh) == 15 then  -- if vehicle is helicopter, get it's health stats
+        heli_healths = GetHeliMainRotorHealth(veh) + GetHeliTailBoomHealth(veh) + GetHeliTailRotorHealth(veh)
+    end
+    return GetVehicleBodyHealth(veh) + GetVehicleEngineHealth(veh) + GetVehiclePetrolTankHealth(veh) + wheel_healths + heli_healths
 end
 
 function TrackEntityHealth()
@@ -94,7 +98,7 @@ Citizen.CreateThread(function ()
     end
 end)
 
-function CalculateHealthLost(ent, weapon)
+function CalculateHealthLost(ent)
     local health = 0
     local armor = 0
     if IsEntityAPed(ent) then
@@ -178,6 +182,9 @@ RegisterCommand('dmgfade', function(source, args)
     })
 end, false)
 
+-- There are some issues with damage events being triggered reliably.
+-- My future plan is to use CEventEntityDamage to see if it triggers for the helicopter parts taking damage. It doesn't appear to update Network Damage
+-- Another option is to move the below code into it's own function, and call it in the TrackEntityHealth loop too, so that it properly updates.
 
 BUILD = GetGameBuildNumber()
 DamageTypes = {93, 116, 117, 120, 121, 122}
@@ -186,7 +193,7 @@ AddEventHandler('gameEventTriggered', function (eventName, data)
     if eventName == 'CEventNetworkEntityDamage' then
         local victim = data[1]
         local attacker = data[2]
-        
+        -- victim ~= GetVehiclePedIsIn(PlayerPedId(), false)
         if attacker ~= PlayerPedId() and victim ~= PlayerPedId() and DmgME == true then
             return
         end
@@ -202,7 +209,7 @@ AddEventHandler('gameEventTriggered', function (eventName, data)
         end
 
         -- local victimDied = data[4 + offset]
-        local weaponHash = data[5 + offset]
+        -- local weaponHash = data[5 + offset]  -- we don't use this
         -- local isMelee = data[10 + offset]
         local damageType = data[11 + offset]
 
@@ -218,7 +225,7 @@ AddEventHandler('gameEventTriggered', function (eventName, data)
         end
 
         -- dmg = GetWeaponDamage(GetSelectedPedWeapon(attacker), 0)
-        local dmg = CalculateHealthLost(victim, weaponHash)
+        local dmg = CalculateHealthLost(victim)
         -- print('Health Lost: '.. dmgh)
         -- dmg = GetWeaponDamage(weaponHash, 0)
         -- DrawDamageText(GetEntityCoords(victim), math.floor(-dmg), {255, 0, 0}, 1)
@@ -239,13 +246,13 @@ AddEventHandler('gameEventTriggered', function (eventName, data)
         -- old values 173, 216, 230
         local grey = {154, 154, 154}
         if damageType == 93 then
-            DrawDamageText(position, 'Pop!', grey, 0.5)
+            DrawDamageText(position, 'Pop!', grey, 0.5) -- tire damage
             -- print('pop!')
         elseif damageType == 116 then  -- 117 is exhaust pipe? im not certain. shows up when shooting the Pheonix's exhaust pipes
-            DrawDamageText(position, 'Ding!', grey, 0.5)
+            DrawDamageText(position, 'Ding!', grey, 0.5)  -- general vehicle damage
             -- print('ding!')
         elseif damageType == 120 or damageType == 121 or damageType == 122 then
-            DrawDamageText(position, 'Smash!', grey, 0.5)
+            DrawDamageText(position, 'Smash!', grey, 0.5)  -- window damage
             -- print('smash!')
         elseif damageType == 0 then
             return
