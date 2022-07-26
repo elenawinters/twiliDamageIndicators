@@ -8,8 +8,6 @@ This script displays damage next to entities that you have hurt.
 
 `/hidehealth` | Turn off the current vehicle health overlay.
 
-`/dmgfade` | The speed at which the damage numbers will dissipate (default is 5).
+`/dmghud` | Display the HUD to change EWDN settings.
 
-`/dmgall` | Show global damage from any entity to another.
 
-`/dmgme` | Show local damage that the player deals or takes (this is the default).
