@@ -1,6 +1,7 @@
 -- TODO: Test OneSync Legacy and OneSync Infinity functionality on both FiveM and RedM
 
-trackedPeds = {}  -- only used in GTAV currently
+
+TrackedEntities = {}
 
 DmgDyn = false
 DmgFade = 5
@@ -102,13 +103,6 @@ function round(num, prec)  -- fp stands for fractional precision
     return math.floor(num + 0.5)
   end
 
--- function round(num, numDecimalPlaces)
---     local mult = 10^(numDecimalPlaces or 0)
---     return math.floor(num * mult + 0.5) / mult
--- end
-
--- trackedPeds[GetPlayerPed()] = {health=100, armor=100}
--- trackedPeds[GetPlayerPed()].armor = 2
 
 function DrawDamageText(position, value, color, size, rate)
     Citizen.CreateThread(function()
@@ -171,8 +165,6 @@ function IndexOf(array, value)
     end
     return nil
 end
-
-TrackedEntities = {}
 
 function MergeVehicleHealths(veh)
     local wheel_healths = 0
@@ -242,11 +234,6 @@ function CalculateHealthLost(ent)
     return {h = health, a = armor}
 end
 
--- function prototype()
---     xyz = GetEntityCoords(PlayerPedId())
---     DrawDamageText(xyz)
--- end
-
 local function RotationToDirection(deg)
     local rad_x = deg['x'] * 0.0174532924
     local rad_z = deg['z'] * 0.0174532924
@@ -304,6 +291,7 @@ if GAME == 'fivem' then
     end)
 
     -- use GetWeaponTimeBetweenShots to get dynamic fade speed per weapon
+    -- use log 0.7 (x) to get Fade Speed from TimeBetweenShots. If output is below 0.1, keep it at 0.1. Refine later
     AddEventHandler('gameEventTriggered', function (eventName, data)
         if eventName == 'CEventNetworkEntityDamage' then  -- network events are unreliable with multiple players
             local victim = data[1]
@@ -326,8 +314,8 @@ if GAME == 'fivem' then
             end
     
             local victimDied = data[4 + offset]
-            -- local weaponHash = data[5 + offset]  -- we don't use this
-            -- local isMelee = data[10 + offset]
+            local weaponHash = data[5 + offset]
+            local isMelee = data[10 + offset]
             local damageType = data[11 + offset]
 
             -- print('victimDied? '.. victimDied)
@@ -336,7 +324,8 @@ if GAME == 'fivem' then
             -- print(GetPedLastDamageBone(victim))
             if entity ~= victim then
                 if IsEntityAPed(victim) then
-                    if IsPedFatallyInjured(victim) and GetPedCauseOfDeath(victim) == 0 then
+                    -- if IsPedFatallyInjured(victim) and GetPedCauseOfDeath(victim) == 0 then
+                    if victimDied and GetPedCauseOfDeath(victim) == 0 then
                         position = GetPedBoneCoords(victim, 0x60F1)  -- spine2
                     else
                         local success, bone = GetPedLastDamageBone(victim)
@@ -354,7 +343,18 @@ if GAME == 'fivem' then
             -- if position.x == 0 and position.y == 0 and position.z == 0 then
             --     position = GetEntityCoords(victim)
             -- end
-    
+            
+            local fadeRate = DmgFade
+            if isMelee == 0 and DmgDyn then
+                fadeRate = math.log(GetWeaponTimeBetweenShots(weaponHash), 0.7)
+                if fadeRate <= 1 then
+                    fadeRate = 1
+                end
+                if fadeRate == 1e309 then  -- infinities MONKAS
+                    fadeRate = 5
+                end
+            end
+            print('Fade Rate for this instance is '.. fadeRate)
             -- dmg = GetWeaponDamage(GetSelectedPedWeapon(attacker), 0)
             local dmg = CalculateHealthLost(victim)
             -- print('Health Lost: '.. dmgh)
@@ -362,13 +362,13 @@ if GAME == 'fivem' then
             -- DrawDamageText(GetEntityCoords(victim), math.floor(-dmg), {255, 0, 0}, 1)
             -- {224, 50, 50}
             if IsEntityAPed(victim) and IsPedFatallyInjured(victim) and dmg.h ~= 0 then
-                DrawDamageText(position, round(-dmg.h + 100), red, 1)
+                DrawDamageText(position, round(-dmg.h + 100), red, 1, fadeRate)
             else
-                DrawDamageText(position, round(-dmg.h), red, 1)
+                DrawDamageText(position, round(-dmg.h), red, 1, fadeRate)
             end
             local blue = {93, 182, 229}
             if dmg.a ~= 0 then
-                DrawDamageText(position, round(-dmg.a), blue, 1)
+                DrawDamageText(position, round(-dmg.a), blue, 1, fadeRate)
             end
             -- print('Victim ' .. victim)
             -- print('Attacker ' .. attacker)
@@ -376,13 +376,13 @@ if GAME == 'fivem' then
             -- old values 173, 216, 230
             local grey = {154, 154, 154}
             if damageType == 93 then
-                DrawDamageText(position, 'Pop!', grey, 0.5) -- tire damage
+                DrawDamageText(position, 'Pop!', grey, 0.5, fadeRate) -- tire damage
                 -- print('pop!')
             elseif damageType == 116 then  -- 117 is exhaust pipe? im not certain. shows up when shooting the Pheonix's exhaust pipes
-                DrawDamageText(position, 'Ding!', grey, 0.5)  -- general vehicle damage
+                DrawDamageText(position, 'Ding!', grey, 0.5, fadeRate)  -- general vehicle damage
                 -- print('ding!')
             elseif damageType == 120 or damageType == 121 or damageType == 122 then
-                DrawDamageText(position, 'Smash!', grey, 0.5)  -- window damage
+                DrawDamageText(position, 'Smash!', grey, 0.5, fadeRate)  -- window damage
                 -- print('smash!')
             elseif damageType == 0 then
                 return
@@ -402,6 +402,12 @@ elseif GAME == 'redm' then  -- RedM doesn't have the `gameEventTriggered` handle
         if suspect ~= PlayerPedId() and victim ~= PlayerPedId() and DmgME == true then
             return  -- if i'm not a victim or suspect, and I only want to show my damage, return
         end
+
+        -- TODO: OneSync causes issues relating to the activation of the Game Event. We need to fix it.
+        -- Basically, if a horse isn't visible but dead, it'll despawn, but when it gets back into view, it'll spawn and die, triggering the event.
+        -- Oddity: It only seems to happen with horses that were attached to a carriage.
+
+        -- Potential Solution: Take advantage of TrackedEntities, with a simple data value of alive = true or false
 
         local position, entity = RaycastFromPlayer()
 
@@ -433,16 +439,6 @@ elseif GAME == 'redm' then  -- RedM doesn't have the `gameEventTriggered` handle
                             eventDataStruct:SetInt32(8*iter, 0)
                         end
                         
-                        -- eventDataStruct:SetInt32(0, 0)  -- 0
-                        -- eventDataStruct:SetInt32(8, 0)  -- 1
-                        -- eventDataStruct:SetInt32(8*2, 0)  -- 2
-                        -- eventDataStruct:SetInt32(8*3, 0)  -- 3
-                        -- eventDataStruct:SetInt32(8*4, 0)  -- 4
-                        -- eventDataStruct:SetInt32(8*5, 0)  -- 5
-                        -- eventDataStruct:SetInt32(8*6, 0)  -- 6
-                        -- eventDataStruct:SetInt32(8*7, 0)  -- 7
-                        -- eventDataStruct:SetInt32(8*8, 0)  -- 8
-
                         -- local eventDataExists = GetEventData(0, i, eventDataStruct:Buffer(), eventDataSize)  -- doesn't work?
 
                         local eventDataExists = Citizen.InvokeNative(0x57EC5FA4D4D6AFCA, 0, i, eventDataStruct:Buffer(), eventDataSize)  --GetEventData

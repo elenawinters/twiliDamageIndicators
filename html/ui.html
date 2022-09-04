@@ -10,19 +10,23 @@
   </head>
 
 <body>
-<div class="dmgmenu">
+<div class="dmgmenu" hidden>
     <h1 id="toptext">EWDamageNumbers by Elena Winters</h1>
+    <!-- <input type="checkbox" id="toptextcheck" class="cm-toggle" onclick="testtoggle(this.checked)" checked>
+    <label for="toptext"><span style="font-size: 17.5px;"></span>Enabled</label> -->
     <br>
     <hr>
     <h1 style="color: white; margin-bottom: 2.5px;">Settings</h1>
     <br>
     <ul>
-        <li><input type="checkbox" id="dynamicfadeonoff" class="cm-toggle" onclick="dynamicfadetoggle(this.checked)" checked>
-        <label for="dynamicfadeonoff"><span style="font-size: 17.5px;"></span>Dynamic Fade</label>
+        <li>
+          <input type="checkbox" id="dynamicfadeonoff" class="cm-toggle" onclick="dynamicfadetoggle(this.checked)" checked>
+          <label for="dynamicfadeonoff"><span style="font-size: 17.5px;"></span>Dynamic Fade</label>
 
-        <input type="range" id="fadespeedrange" value="5" class="cm-slider" min="0.1" max="9" step="0.1" onchange="fadespeedupdate(this.value)" disabled>
-        <input type="text" id="fadespeedshow" value="5" size="1" style="text-align:center;" disabled>
-        <label for="fadespeedrange"><span style="font-size: 17.5px;">Fade Speed (Higher = Faster)</span></label></li>
+          <input type="range" id="fadespeedrange" value="5" class="cm-slider" min="0.1" max="9" step="0.1" onchange="fadespeedupdate(this.value)" disabled>
+          <input type="text" id="fadespeedshow" value="5" size="1" style="text-align:center;" disabled>
+          <label for="fadespeedrange"><span style="font-size: 17.5px;">Fade Speed (Higher = Faster)</span></label>
+        </li>
     </ul>
     <br>
     <ul>
