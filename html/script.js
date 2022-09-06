@@ -1,124 +1,94 @@
 // on resource load, load the defaults
 
-var xhr = new XMLHttpRequest();
-var state = localStorage.getItem('dynamicfade');
-if (state == null) {
-  state = true
-  localStorage.setItem('dynamicfade', state)
+function ensureBoolean(input) {
+  if (typeof(input) == 'string') {
+    return (input === 'true')
+  }
+  return input
 }
-// document.getElementById('fadespeedrange').disabled=state;
-// document.getElementById('dynamicfadeonoff').checked=state;
-xhr.open("POST", "https://ewdamagenumbers/dynamicfadestatus", true);
-xhr.send(JSON.stringify({'dynamicfade': state}));
 
-var xhr = new XMLHttpRequest();
-var val = localStorage.getItem('fadespeed');
-if (val == null) {
-  val = 5
-  localStorage.setItem('fadespeed', val)
+function loadDefaults() {
+  sendDynamicFade(localStorage.getItem('dynamicfade'));
+  sendFadeSpeed(localStorage.getItem('fadespeed'));
+  sendLocalDamage(localStorage.getItem('localdmg'));
+  sendPrecision(localStorage.getItem('precision'));
 }
-// document.getElementById('fadespeedshow').value=val;
-// document.getElementById('fadespeedrange').value=val;
-xhr.open("POST", "https://ewdamagenumbers/fadespeedstatus", true);
-xhr.send(JSON.stringify({'fadespeed': val}));
 
-var xhr = new XMLHttpRequest();
-var state = localStorage.getItem('localdmg');
-if (state == null) {
-  state = true
-  localStorage.setItem('localdmg', state)
+function sendDynamicFade(dynamic_fade) {
+  if (dynamic_fade == null) {
+    dynamic_fade = true
+    localStorage.setItem('dynamicfade', dynamic_fade)
+  }
+  
+  let xhr = new XMLHttpRequest();
+  xhr.open("POST", "https://ewdamagenumbers/dynamicfadestatus", true);
+  xhr.send(JSON.stringify({'dynamicfade': ensureBoolean(dynamic_fade)}));
 }
-// document.getElementById('localdmgonoff').checked=state;
-xhr.open("POST", "https://ewdamagenumbers/localdmgstatus", true);
-xhr.send(JSON.stringify({'localdmg': state}));
 
-var xhr = new XMLHttpRequest();
-var val = localStorage.getItem('precision');
-if (val == null) {
-  val = 2
-  localStorage.setItem('precision', val)
+function sendFadeSpeed(fade_speed) {
+  if (fade_speed == null) {
+    fade_speed = 5
+    localStorage.setItem('fadespeed', fade_speed)
+  }
+
+  let xhr = new XMLHttpRequest();
+  xhr.open("POST", "https://ewdamagenumbers/fadespeedstatus", true);
+  xhr.send(JSON.stringify({'fadespeed': Number(fade_speed)}));
 }
-// document.getElementById('precisionrange').value=val;
-xhr.open("POST", "https://ewdamagenumbers/precisionstatus", true);
-xhr.send(JSON.stringify({'precision': val}));
+
+function sendLocalDamage(damage_local) {
+  if (damage_local == null) {
+    damage_local = true
+    localStorage.setItem('localdmg', damage_local)
+  }
+
+  let xhr = new XMLHttpRequest();
+  xhr.open("POST", "https://ewdamagenumbers/localdmgstatus", true);
+  xhr.send(JSON.stringify({'localdmg': ensureBoolean(damage_local)}));
+}
+
+function sendPrecision(precision) {
+  if (precision == null) {
+    precision = 2
+    localStorage.setItem('precision', precision)
+  }
+
+  let xhr = new XMLHttpRequest();
+  xhr.open("POST", "https://ewdamagenumbers/precisionstatus", true);
+  xhr.send(JSON.stringify({'precision': Number(precision)}));
+}
 
 
 // handle setting changes
 
-function dynamicfadetoggle(state) {
-  document.getElementById('fadespeedrange').disabled=state;
-  localStorage.setItem('dynamicfade', state);
+function dynamicfadetoggle(dynamic_fade) {
+  document.getElementById('fadespeedrange').disabled=dynamic_fade;
+  localStorage.setItem('dynamicfade', dynamic_fade);
 
-  var xhr = new XMLHttpRequest();
-  xhr.open("POST", "https://ewdamagenumbers/dynamicfadestatus", true);
-  xhr.send(JSON.stringify({'dynamicfade': state}));
+  sendDynamicFade(dynamic_fade);
 }
 
-// if (localStorage.getItem("dynamicfade") == 'true') {
-//   $("#HealthBar").fadeIn()
-//   healthtogglemenu.checked = true;
-// } else {
-//   $("#HealthBar").fadeOut()
-//   healthtogglemenu.checked = false;
-// }
+function fadespeedupdate(fade_speed) {
+  document.getElementById('fadespeedshow').value=fade_speed;
+  localStorage.setItem('fadespeed', fade_speed);
 
-function fadespeedupdate(val) {
-  document.getElementById('fadespeedshow').value=val;
-  localStorage.setItem('fadespeed', val);
-
-  var xhr = new XMLHttpRequest();
-  xhr.open("POST", "https://ewdamagenumbers/fadespeedstatus", true);
-  xhr.send(JSON.stringify({'fadespeed': val}));
+  sendFadeSpeed(fade_speed);
 }
 
-function localdmgtoggle(state) {
-  localStorage.setItem('localdmg', state);
+function localdmgtoggle(damage_local) {
+  localStorage.setItem('localdmg', damage_local);
 
-  var xhr = new XMLHttpRequest();
-  xhr.open("POST", "https://ewdamagenumbers/localdmgstatus", true);
-  xhr.send(JSON.stringify({'localdmg': state}));
+  sendLocalDamage(damage_local);
 }
 
-function precisionupdate(val) {
-  document.getElementById('precisionshow').value=val;
-  localStorage.setItem('precision', val);
+function precisionupdate(precision) {
+  document.getElementById('precisionshow').value=precision;
+  localStorage.setItem('precision', precision);
 
-  var xhr = new XMLHttpRequest();
-  xhr.open("POST", "https://ewdamagenumbers/precisionstatus", true);
-  xhr.send(JSON.stringify({'precision': val}));
+  sendPrecision(precision);
 }
 
-// fetch(`https://ewdamagenumbers/dynamicfadestatus`, {
-//   method: 'POST',
-//   headers: {
-//   'Content-Type': 'application/json; charset=UTF-8',
-// },
-// body: JSON.stringify({
-// dynamicfade: localStorage.getItem("dynamicfade")
-// })
-// }).then(resp => resp.json()).then(resp => console.log(resp));
-
-
-// fetch(`https://ewdamagenumbers/localdmgstatus`, {
-//   method: 'POST',
-//   headers: {
-//   'Content-Type': 'application/json; charset=UTF-8',
-// },
-// body: JSON.stringify({
-// localdmg: localStorage.getItem("localdmg")
-// })
-// }).then(resp => resp.json()).then(resp => console.log(resp));
-
-
-// fetch(`https://ewdamagenumbers/precisionstatus`, {
-//   method: 'POST',
-//   headers: {
-//   'Content-Type': 'application/json; charset=UTF-8',
-// },
-// body: JSON.stringify({
-// precision: localStorage.getItem("precision")
-// })
-// }).then(resp => resp.json()).then(resp => console.log(resp));
+// other stuff
 
 const CancelMenu = () => {
   $.post(`https://ewdamagenumbers/cancel`);
@@ -126,32 +96,27 @@ const CancelMenu = () => {
 
 document.onkeyup = function (event) {
   event = event || window.event;
-  var charCode = event.keyCode || event.which;
+  let charCode = event.keyCode || event.which;
   if (charCode == 27) {
     CancelMenu();
   }
 };
 
-// event.data.action == "open"
-
-
 window.addEventListener("message", function (event) {
   let data = event.data;
-  // console.log(data);
-  if (data.showdmgmenu == true) {
-    var dynstate = (localStorage.getItem('dynamicfade') === 'true');
+  if (data.showdmgmenu) {
+    let dynstate = ensureBoolean(localStorage.getItem('dynamicfade'));
     document.getElementById('dynamicfadeonoff').checked = dynstate;
     document.getElementById('fadespeedrange').disabled = dynstate;
-    var fspeed = localStorage.getItem('fadespeed');
+    let fspeed = Number(localStorage.getItem('fadespeed'));
     document.getElementById('fadespeedrange').value = fspeed;
     document.getElementById('fadespeedshow').value = fspeed;
-    document.getElementById('localdmgonoff').checked = (localStorage.getItem('localdmg') === 'true');
-    var prec = localStorage.getItem('precision');
+    document.getElementById('localdmgonoff').checked = ensureBoolean(localStorage.getItem('localdmg'));
+    let prec = Number(localStorage.getItem('precision'));
     document.getElementById('precisionrange').value = prec;
     document.getElementById('precisionshow').value = prec;
     $(".dmgmenu").show()
-  } else if (data.showdmgmenu == false) {
+  } else {
     $(".dmgmenu").hide();
   }
-
 });

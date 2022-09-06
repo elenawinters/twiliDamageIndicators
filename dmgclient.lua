@@ -1,68 +1,38 @@
--- TODO: Test OneSync Legacy and OneSync Infinity functionality on both FiveM and RedM
+-- TODO: Test OneSync Legacy and OneSync Infinity functionality on both FiveM and RedM 
+-- Status: Issues with RedM OneSync Infinity. OneSync Legacy still needs to be tested.
 
+-- Issues: When running, the damage text kinda wobbles up and down. I'm not sure if I can fix this, but I'mma try
 
 TrackedEntities = {}
 
-DmgDyn = false
-DmgFade = 5
-DmgME = true
-Precision = 2  -- fractional precision
+ValidFonts = {  -- 2 is a numbers font, 3 is a symbols font
+    ['default'] = 0,  -- 5 is the same
+    ['italics'] = 1,
+    ['compact'] = 4,  -- 6 is the same
+    ['vice'] = 7,
+}
+
+Settings = {
+    ['precision'] = 2,  -- fractional precision
+    ['fade_speed'] = 5,
+    ['dynamic_fade'] = true,
+    ['local_damage'] = true,
+    ['writhe_speak'] = true,  -- setting not yet implemented
+    ['render_font'] = ValidFonts['default'],  -- setting not yet implemented in UI, /testfont <number (0, 1, 4, 7)> can be used but it doesn't save.
+    ['color'] = {  -- settings not yet implemented
+        ['damage_vehicle_ding'] = {154, 154, 154},
+        ['damage_entity'] = {224, 50, 50},
+        ['damage_armor'] = {93, 182, 229},
+        ['entity_writhe'] = {169, 0, 0},
+    }
+}
+
+DefaultSettings = Settings
 
 BUILD = GetGameBuildNumber()
 GAME = GetGameName()
 
-tobool = {["true"] = true, ["false"] = false}
--- DamageTypes = {93, 116, 117, 120, 121, 122}  -- DamageTypes for GTAV; this is unused
-
--- RegisterCommand('dmgme', function(source, args)
---     DmgME = true
---     TriggerEvent('chat:addMessage', {
---         color = { 255, 0, 0},
---         multiline = true,
---         args = {"Client", "Only showing damage from me!"}
---     })
--- end, false)
-
--- RegisterCommand('dmgall', function(source, args)
---     DmgME = false
---     TriggerEvent('chat:addMessage', {
---         color = { 255, 0, 0},
---         multiline = true,
---         args = {"Client", "Showing all damage!"}
---     })
--- end, false)
-
--- RegisterCommand('dmgprec', function(source, args)
---     Precision = tonumber(args[1])
---     TriggerEvent('chat:addMessage', {
---         color = { 255, 0, 0},
---         multiline = true,
---         args = {"Client", "Precision set to " .. args[1] .."!"}
---     })
--- end, false)
-
-
--- RegisterCommand('dmgfade', function(source, args)
---     DmgFade = tonumber(args[1])
---     TriggerEvent('chat:addMessage', {
---         color = { 255, 0, 0},
---         multiline = true,
---         args = {"Client", "Damage text fading speed set to " .. args[1] .. "!"}
---     })
--- end, false)
-
-
--- RegisterNUICallback('change', function(data)
---     NUI_status = false
---     TriggerServerEvent('cd_easytime:ForceUpdate', data.values)
---     if data.savesettings then
---         print('Saving Settings - please wait 2 seconds ...')
---         Wait(2000)
---         TriggerServerEvent('cd_easytime:SaveSettings')
---         print('Settings Saved.')
---     end
--- end)
-
+-- tobool = {['true'] = true, ['false'] = false}
 
 RegisterCommand('dmghud', function(source, args)
     SetNuiFocus(true, true)
@@ -76,25 +46,34 @@ end)
 
 
 RegisterNUICallback('dynamicfadestatus', function(data)
-    DmgDyn = tobool[data.dynamicfade]
+    Settings['dynamic_fade'] = data.dynamicfade
 end)
 
 RegisterNUICallback('fadespeedstatus', function(data)
-    DmgFade = tonumber(data.fadespeed)
+    Settings['fade_speed'] = data.fadespeed
 end)
 
 RegisterNUICallback('localdmgstatus', function(data)
-    DmgME = tobool[data.localdmg]
+    Settings['local_damage'] = data.localdmg
 end)
 
 RegisterNUICallback('precisionstatus', function(data)
-    Precision = tonumber(data.precision)
+    Settings['precision'] = data.precision
 end)
 
+RegisterCommand('testfont', function(source, args)
+    Settings['render_font'] = tonumber(args[1])
+    TriggerEvent('chat:addMessage', {
+        color = { 255, 0, 0},
+        multiline = true,
+        args = {"Debug", "Pbttt testing font number ".. Settings['render_font']}
+    })
+end, false)
 
-function round(num, prec)  -- fp stands for fractional precision
+
+function round(num, prec)
     if prec == nil then
-        prec = Precision
+        prec = Settings['precision']
     end
     if prec and prec > 0 then
       local mult = 10^prec
@@ -106,8 +85,9 @@ function round(num, prec)  -- fp stands for fractional precision
 
 function DrawDamageText(position, value, color, size, rate)
     Citizen.CreateThread(function()
+        local is_render_dynamic = Settings['dynamic_fade']
         if rate == nil then
-            rate = DmgFade
+            rate = Settings['fade_speed']
         end
         -- checks if the timeout is true
         local positionOffset = {x=0, y=0}
@@ -118,20 +98,18 @@ function DrawDamageText(position, value, color, size, rate)
         local currentAlpha = fadeCounter
         local perspectiveScale = 4
         local scaleMultiplier = size or 1
-        local font = 0
+        local font = Settings['render_font']
         local textOutline = true
         while currentAlpha > 0 do
             Citizen.Wait(0)
+            -- local camPos = GetFinalRenderedCamCoord()
             local onScreen, _x, _y = GetScreenCoordFromWorldCoord(position.x, position.y, position.z)
-            local p = GetFinalRenderedCamCoord()
-            local distance = GetDistanceBetweenCoords(p.x, p.y, p.z, position.x, position.y, position.xyz.z, 1)
-            local scale = (1 / distance) * (perspectiveScale)
-            local fov = (1 / GetGameplayCamFov()) * 75
-            scale = scale * fov
+            -- local distance = GetDistanceBetweenCoords(camPos.x, camPos.y, camPos.z, position.x, position.y, position.xyz.z, 1)
+            -- local scale = (1 / distance) * (perspectiveScale) * (1 / GetFinalRenderedCamFov()) * 75
             if onScreen then
-
                 if GAME == 'fivem' then
                     SetTextScale(tonumber(scaleMultiplier * 0.0), tonumber(0.35 * scaleMultiplier))
+                    -- SetTextScale(0.0, scale)
                     SetTextFont(font)
                     SetTextProportional(true)
                     SetTextColour(color[1], color[2], color[3], currentAlpha)
@@ -150,6 +128,9 @@ function DrawDamageText(position, value, color, size, rate)
 
                     DisplayText(vstr, _x + positionOffset.x, _y + positionOffset.y)
                 end
+            end
+            if is_render_dynamic == false then  -- people who use a static fade want it to update instantly
+                rate = Settings['fade_speed']
             end
             fadeCounter = fadeCounter - rate
             currentAlpha = round(fadeCounter, 0)
@@ -202,7 +183,7 @@ function TrackEntityHealth()
     for i, ent in ipairs(TrackedEntities) do
         if entities[ent] == nil and TrackedEntities[ent] then
             table.remove(TrackedEntities, IndexOf(TrackedEntities, ent))
-            print('Removed '.. ent .. ' from tracking list')
+            print('Removed '.. ent .. ' from tracking list')  -- i've never seen this run. i need to do some more testing to see if it ever will
         end
     end
 end
@@ -246,27 +227,18 @@ local function RotationToDirection(deg)
 end
 
 local function RaycastFromPlayer()
-    -- Results of the raycast
-    local hit = false
-    local endCoords = nil
-    local surfaceNormal = nil
-    local entityHit = nil
-
     local playerPed = PlayerPedId()
-    local camCoord = GetFinalRenderedCamCoord()
+    local camCoord = GetGameplayCamCoord()
     local camRot = GetGameplayCamRot(0)
 
     local rayHandle = StartShapeTestRay(camCoord, camCoord + RotationToDirection(camRot) * 1000, -1, playerPed)
-    local status, hit, endCoords, surfaceNormal, entityHit = GetShapeTestResult(rayHandle)
+    local _status, _hit, endCoords, _surfaceNormal, entityHit = GetShapeTestResult(rayHandle)
 
     return endCoords, entityHit
 
-    -- return hit, endCoords, surfaceNormal, entityHit
 end
 
 -- CEventEntityDamaged
-
-local red = {224, 50, 50}
 
 if GAME == 'fivem' then
     -- AddEventHandler('CEventEntityDamaged', function (entities, eventEntity, args)
@@ -283,7 +255,8 @@ if GAME == 'fivem' then
         Citizen.CreateThread(function()
             local victim = args[1]
             while IsPedFatallyInjured(victim) == false do
-                DrawDamageText(GetPedBoneCoords(victim, 0xFE2C), writhe_says[math.random(#writhe_says)], {169, 0, 0}, 0.75)
+                -- Colors likely need to be adjusted. TODO: Add a color wheel to the settings menu for all color related settings
+                DrawDamageText(GetPedBoneCoords(victim, 0xFE2C), writhe_says[math.random(#writhe_says)], Settings['color']['entity_writhe'], 0.75)
                 Citizen.Wait(500)
             end
         end)
@@ -298,7 +271,7 @@ if GAME == 'fivem' then
             local suspect = data[2]
             
             -- victim ~= GetVehiclePedIsIn(PlayerPedId(), false)
-            if suspect ~= PlayerPedId() and victim ~= PlayerPedId() and DmgME == true then
+            if suspect ~= PlayerPedId() and victim ~= PlayerPedId() and Settings['local_damage'] == true then
                 return
             end
     
@@ -318,13 +291,15 @@ if GAME == 'fivem' then
             local isMelee = data[10 + offset]
             local damageType = data[11 + offset]
 
+            -- Would it be funny to render blood drop emotes twice a second for ten seconds when the below is true?
+            -- Yes.
+            -- Am I gonna do it...?
+            -- Yes, when I clean up everything. It'll be an easter egg that can be toggled
             -- print('victimDied? '.. victimDied)
 
             local position, entity = RaycastFromPlayer()
-            -- print(GetPedLastDamageBone(victim))
             if entity ~= victim then
                 if IsEntityAPed(victim) then
-                    -- if IsPedFatallyInjured(victim) and GetPedCauseOfDeath(victim) == 0 then
                     if victimDied and GetPedCauseOfDeath(victim) == 0 then
                         position = GetPedBoneCoords(victim, 0x60F1)  -- spine2
                     else
@@ -340,12 +315,8 @@ if GAME == 'fivem' then
                 end
             end
 
-            -- if position.x == 0 and position.y == 0 and position.z == 0 then
-            --     position = GetEntityCoords(victim)
-            -- end
-            
-            local fadeRate = DmgFade
-            if isMelee == 0 and DmgDyn then
+            local fadeRate = Settings['fade_speed']
+            if isMelee == 0 and Settings['dynamic_fade'] then
                 fadeRate = math.log(GetWeaponTimeBetweenShots(weaponHash), 0.7)
                 if fadeRate <= 1 then
                     fadeRate = 1
@@ -354,36 +325,24 @@ if GAME == 'fivem' then
                     fadeRate = 5
                 end
             end
-            print('Fade Rate for this instance is '.. fadeRate)
-            -- dmg = GetWeaponDamage(GetSelectedPedWeapon(attacker), 0)
+
             local dmg = CalculateHealthLost(victim)
-            -- print('Health Lost: '.. dmgh)
-            -- dmg = GetWeaponDamage(weaponHash, 0)
-            -- DrawDamageText(GetEntityCoords(victim), math.floor(-dmg), {255, 0, 0}, 1)
-            -- {224, 50, 50}
             if IsEntityAPed(victim) and IsPedFatallyInjured(victim) and dmg.h ~= 0 then
-                DrawDamageText(position, round(-dmg.h + 100), red, 1, fadeRate)
+                DrawDamageText(position, round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate)
             else
-                DrawDamageText(position, round(-dmg.h), red, 1, fadeRate)
+                DrawDamageText(position, round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate)
             end
-            local blue = {93, 182, 229}
+
             if dmg.a ~= 0 then
-                DrawDamageText(position, round(-dmg.a), blue, 1, fadeRate)
+                DrawDamageText(position, round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate)
             end
-            -- print('Victim ' .. victim)
-            -- print('Attacker ' .. attacker)
-            -- print(attacker .. ' attacked ' .. victim .. ' with damage type ' .. damageType)
-            -- old values 173, 216, 230
-            local grey = {154, 154, 154}
+
             if damageType == 93 then
-                DrawDamageText(position, 'Pop!', grey, 0.5, fadeRate) -- tire damage
-                -- print('pop!')
+                DrawDamageText(position, 'Pop!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate) -- tire damage
             elseif damageType == 116 then  -- 117 is exhaust pipe? im not certain. shows up when shooting the Pheonix's exhaust pipes
-                DrawDamageText(position, 'Ding!', grey, 0.5, fadeRate)  -- general vehicle damage
-                -- print('ding!')
+                DrawDamageText(position, 'Ding!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate)  -- general vehicle damage
             elseif damageType == 120 or damageType == 121 or damageType == 122 then
-                DrawDamageText(position, 'Smash!', grey, 0.5, fadeRate)  -- window damage
-                -- print('smash!')
+                DrawDamageText(position, 'Smash!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate)  -- window damage
             elseif damageType == 0 then
                 return
             -- else
@@ -399,7 +358,7 @@ if GAME == 'fivem' then
     end)
 elseif GAME == 'redm' then  -- RedM doesn't have the `gameEventTriggered` handler
     function RenderStepRDR3(victim, suspect, defaultPosition, value)  -- there is a return, and if you return in the above Thread, it exits the thread
-        if suspect ~= PlayerPedId() and victim ~= PlayerPedId() and DmgME == true then
+        if suspect ~= PlayerPedId() and victim ~= PlayerPedId() and Settings['local_damage'] == true then
             return  -- if i'm not a victim or suspect, and I only want to show my damage, return
         end
 
@@ -420,7 +379,7 @@ elseif GAME == 'redm' then  -- RedM doesn't have the `gameEventTriggered` handle
             end
         end
 
-        DrawDamageText(position, round(-value), red, 1)
+        DrawDamageText(position, round(-value), Settings['color']['damage_entity'], 1)
 
     end
     Citizen.CreateThread(function()
