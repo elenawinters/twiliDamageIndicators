@@ -44,6 +44,8 @@ end
 -- cars and motorcycles: hiss & smoke below 400, sputtering below 300, engine degradation (delayed) below 100, fire below 0, explosion below 0 if moving
 -- TODO: DO BOATS AND SUBMARINES
 
+-- engine degredation is almost certainly tied to engine temperature. i need to research this.
+
 HealthValues = {  -- always y, o, r, m for this struct
     air = {y=900, o=600, r=300, m=200},
     land = {y=400, o=300, r=100, m=0}  -- boats also use this

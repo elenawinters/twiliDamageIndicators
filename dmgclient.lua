@@ -5,19 +5,33 @@
 
 TrackedEntities = {}
 
-ValidFonts = {  -- 2 is a numbers font, 3 is a symbols font
-    ['default'] = 0,  -- 5 is the same
-    ['italics'] = 1,
-    ['compact'] = 4,  -- 6 is the same
-    ['vice'] = 7,
+ValidFonts = { -- 2 is a numbers font, 3 is a symbols font in both games
+    ['fivem'] = {
+        ['default'] = 0,  -- 5 is the same
+        ['italics'] = 1,
+        ['compact'] = 4,  -- 6 is the same
+        ['vice'] = 7,
+    },
+    ['redm'] = {
+        ['default'] = 0,
+        ['bold'] = 1,
+        ['transparent'] = 4,
+        ['fancy'] = 6
+    }
 }
 
-Settings = {
+-- OffsetModes = {'default', 'jitter', 'fly'}
+
+DefaultSettings = {
     ['precision'] = 2,  -- fractional precision
     ['fade_speed'] = 5,
     ['dynamic_fade'] = true,
     ['local_damage'] = true,
     ['writhe_speak'] = true,  -- setting not yet implemented
+    ['offset_mode'] = 'jitter',
+    ['offset_intensity'] = 50,
+    ['offset_mode_fly_speed'] = 0.0025,
+    ['offset_mode_fly_direction'] = nil,
     ['render_font'] = ValidFonts['default'],  -- setting not yet implemented in UI, /testfont <number (0, 1, 4, 7)> can be used but it doesn't save.
     ['color'] = {  -- settings not yet implemented
         ['damage_vehicle_ding'] = {154, 154, 154},
@@ -27,12 +41,12 @@ Settings = {
     }
 }
 
-DefaultSettings = Settings
+Settings = DefaultSettings
 
 BUILD = GetGameBuildNumber()
 GAME = GetGameName()
 
--- tobool = {['true'] = true, ['false'] = false}
+tobool = {['true'] = true, ['false'] = false}
 
 RegisterCommand('dmghud', function(source, args)
     SetNuiFocus(true, true)
@@ -70,6 +84,37 @@ RegisterCommand('testfont', function(source, args)
     })
 end, false)
 
+RegisterCommand('testoffset', function(source, args)
+    Settings['offset_intensity'] = tonumber(args[1])
+    TriggerEvent('chat:addMessage', {
+        color = { 255, 0, 0},
+        multiline = true,
+        args = {"Debug", "Random offset intensity is now ".. Settings['offset_intensity']}
+    })
+end, false)
+
+
+RegisterCommand('testmode', function(source, args)
+    Settings['offset_mode'] = args[1]
+    TriggerEvent('chat:addMessage', {
+        color = { 255, 0, 0},
+        multiline = true,
+        args = {"Debug", "Random offset intensity is now ".. Settings['offset_mode']}
+    })
+end, false)
+
+
+RegisterCommand('testspeed', function(source, args)
+    Settings['offset_mode_fly_speed'] = tonumber(args[1])
+    TriggerEvent('chat:addMessage', {
+        color = { 255, 0, 0},
+        multiline = true,
+        args = {"Debug", "Random offset intensity is now ".. Settings['offset_mode_fly_speed']}
+    })
+end, false)
+
+
+
 
 function round(num, prec)
     if prec == nil then
@@ -80,32 +125,71 @@ function round(num, prec)
       return math.floor(num * mult + 0.5) / mult
     end
     return math.floor(num + 0.5)
-  end
+end
 
 
-function DrawDamageText(position, value, color, size, rate)
+
+function RandomOffset(position, intensity)  -- this is getting progressively more complex
+    if math.random(2) == 1 then position.x = position.x + -math.random()/intensity else position.x = position.x + math.random()/intensity end
+    if math.random(2) == 1 then position.y = position.y + -math.random()/intensity else position.y = position.y + math.random()/intensity end
+    return position
+end
+
+
+function CalculateRicochet(victim)
+    local weapon_impact_at = GetPedLastWeaponImpactCoord(GetPlayerPed(-1))
+    local car_vector = GetEntityForwardVector(victim)
+    local angle = 45
+end
+
+
+function DrawDamageText(position, value, color, size, rate, entity)
     Citizen.CreateThread(function()
         local is_render_dynamic = Settings['dynamic_fade']
         if rate == nil then
             rate = Settings['fade_speed']
         end
         -- checks if the timeout is true
-        local positionOffset = {x=0, y=0}
-        if math.random(2) == 1 then positionOffset.x = -math.random()/50 else positionOffset.x = math.random()/50 end
-        if math.random(2) == 1 then positionOffset.y = -math.random()/50 else positionOffset.y = math.random()/50 end
+        local offsetIntensity = Settings['offset_intensity']
+        local positionOffsetBase = RandomOffset({x=0, y=0}, offsetIntensity)
+        -- local offsetIntensity = Settings['offset_intensity']
+        -- if math.random(2) == 1 then positionOffset.x = -math.random()/offsetIntensity else positionOffset.x = math.random()/offsetIntensity end
+        -- if math.random(2) == 1 then positionOffset.y = -math.random()/offsetIntensity else positionOffset.y = math.random()/offsetIntensity end
         -- local currentAlpha = math.floor(math.random(127)) + 127
         local fadeCounter = 255
         local currentAlpha = fadeCounter
-        local perspectiveScale = 4
+        -- local perspectiveScale = 4
         local scaleMultiplier = size or 1
         local font = Settings['render_font']
         local textOutline = true
+        local positionOffset = positionOffsetBase
         while currentAlpha > 0 do
             Citizen.Wait(0)
             -- local camPos = GetFinalRenderedCamCoord()
             local onScreen, _x, _y = GetScreenCoordFromWorldCoord(position.x, position.y, position.z)
+            if Settings['offset_mode'] == 'jitter' then
+                positionOffset = RandomOffset(positionOffset, offsetIntensity * 10)
+            elseif Settings['offset_mode'] == 'float' then  -- this is complex
+                -- https://math.stackexchange.com/questions/604324/find-a-point-n-distance-away-from-a-specified-point-in-a-given-direction
+                local angle = math.atan2(positionOffset.x, positionOffset.y) - math.atan2(_x, _y)
+
+                positionOffset.x = positionOffset.x + math.cos(angle) * Settings['offset_mode_fly_speed']
+                positionOffset.y = positionOffset.y + math.sin(angle) * Settings['offset_mode_fly_speed']
+                onScreen = true -- compromise for legacy fly
+            elseif Settings['offset_mode'] == 'fly' then
+                if fadeCounter == 255 then  -- this will always be the first tick, and we can calculate ricochet if we are on the first tick
+                    print('WIP')
+                end
+                -- GOAL - Get 3D world space positions for these 
+                -- Basically, we're gonna do a 3d simulation for an invisible object that is the origin of the 2d text
+                -- I'm probably really in over my head with this one.
+
+                -- This might be scrapped
+                print('Function not yet implemented')
+            end
             -- local distance = GetDistanceBetweenCoords(camPos.x, camPos.y, camPos.z, position.x, position.y, position.xyz.z, 1)
             -- local scale = (1 / distance) * (perspectiveScale) * (1 / GetFinalRenderedCamFov()) * 75
+
             if onScreen then
                 if GAME == 'fivem' then
                     SetTextScale(tonumber(scaleMultiplier * 0.0), tonumber(0.35 * scaleMultiplier))
@@ -328,21 +412,21 @@ if GAME == 'fivem' then
 
             local dmg = CalculateHealthLost(victim)
             if IsEntityAPed(victim) and IsPedFatallyInjured(victim) and dmg.h ~= 0 then
-                DrawDamageText(position, round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate)
+                DrawDamageText(position, round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
             else
-                DrawDamageText(position, round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate)
+                DrawDamageText(position, round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
             end
 
             if dmg.a ~= 0 then
-                DrawDamageText(position, round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate)
+                DrawDamageText(position, round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
             end
 
             if damageType == 93 then
-                DrawDamageText(position, 'Pop!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate) -- tire damage
+                DrawDamageText(position, 'Pop!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim) -- tire damage
             elseif damageType == 116 then  -- 117 is exhaust pipe? im not certain. shows up when shooting the Pheonix's exhaust pipes
-                DrawDamageText(position, 'Ding!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate)  -- general vehicle damage
+                DrawDamageText(position, 'Ding!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim)  -- general vehicle damage
             elseif damageType == 120 or damageType == 121 or damageType == 122 then
-                DrawDamageText(position, 'Smash!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate)  -- window damage
+                DrawDamageText(position, 'Smash!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim)  -- window damage
             elseif damageType == 0 then
                 return
             -- else
@@ -368,6 +452,10 @@ elseif GAME == 'redm' then  -- RedM doesn't have the `gameEventTriggered` handle
 
         -- Potential Solution: Take advantage of TrackedEntities, with a simple data value of alive = true or false
 
+        -- Interesting to note: In Armadillo, the body pits corpses are spawned in as peds and then killed.
+        -- Workaround: Check for those specific models and don't render if they are the entity.
+        -- This could also be a OneSync thing, but I have yet to test that.
+
         local position, entity = RaycastFromPlayer()
 
         if entity ~= victim then
@@ -379,7 +467,7 @@ elseif GAME == 'redm' then  -- RedM doesn't have the `gameEventTriggered` handle
             end
         end
 
-        DrawDamageText(position, round(-value), Settings['color']['damage_entity'], 1)
+        DrawDamageText(position, round(-value), Settings['color']['damage_entity'], 1, 1, victim)
 
     end
     Citizen.CreateThread(function()

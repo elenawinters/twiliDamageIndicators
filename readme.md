@@ -10,4 +10,6 @@ This script displays damage next to entities that you have hurt.
 
 `/dmghud` | Display the HUD to change EWDN settings.
 
+## TODO
 
+The potential for a rewrite to JavaScript exists, and is at least partially done. Unfortunately, dataview is what is holding me back for the RedM portion of the rewrite.
