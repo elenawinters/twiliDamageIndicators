@@ -28,10 +28,11 @@ DefaultSettings = {
     ['dynamic_fade'] = true,
     ['local_damage'] = true,
     ['writhe_speak'] = true,  -- setting not yet implemented
-    ['offset_mode'] = 'jitter',
+    ['detached'] = true,  -- detached will be the default. attached will be difficult to make
+    -- ['offset_mode'] = 'jitter',
     ['offset_intensity'] = 50,
-    ['offset_mode_fly_speed'] = 0.0025,
-    ['offset_mode_fly_direction'] = nil,
+    -- ['offset_mode_fly_speed'] = 0.0025,
+    -- ['offset_mode_fly_direction'] = nil,
     ['render_font'] = ValidFonts['default'],  -- setting not yet implemented in UI, /testfont <number (0, 1, 4, 7)> can be used but it doesn't save.
     ['color'] = {  -- settings not yet implemented
         ['damage_vehicle_ding'] = {154, 154, 154},
@@ -94,24 +95,24 @@ RegisterCommand('testoffset', function(source, args)
 end, false)
 
 
-RegisterCommand('testmode', function(source, args)
-    Settings['offset_mode'] = args[1]
-    TriggerEvent('chat:addMessage', {
-        color = { 255, 0, 0},
-        multiline = true,
-        args = {"Debug", "Random offset intensity is now ".. Settings['offset_mode']}
-    })
-end, false)
+-- RegisterCommand('testmode', function(source, args)
+--     Settings['offset_mode'] = args[1]
+--     TriggerEvent('chat:addMessage', {
+--         color = { 255, 0, 0},
+--         multiline = true,
+--         args = {"Debug", "Random offset intensity is now ".. Settings['offset_mode']}
+--     })
+-- end, false)
 
 
-RegisterCommand('testspeed', function(source, args)
-    Settings['offset_mode_fly_speed'] = tonumber(args[1])
-    TriggerEvent('chat:addMessage', {
-        color = { 255, 0, 0},
-        multiline = true,
-        args = {"Debug", "Random offset intensity is now ".. Settings['offset_mode_fly_speed']}
-    })
-end, false)
+-- RegisterCommand('testspeed', function(source, args)
+--     Settings['offset_mode_fly_speed'] = tonumber(args[1])
+--     TriggerEvent('chat:addMessage', {
+--         color = { 255, 0, 0},
+--         multiline = true,
+--         args = {"Debug", "Random offset intensity is now ".. Settings['offset_mode_fly_speed']}
+--     })
+-- end, false)
 
 
 
@@ -167,26 +168,29 @@ function DrawDamageText(position, value, color, size, rate, entity)
             Citizen.Wait(0)
             -- local camPos = GetFinalRenderedCamCoord()
             local onScreen, _x, _y = GetScreenCoordFromWorldCoord(position.x, position.y, position.z)
-            if Settings['offset_mode'] == 'jitter' then
+            if IsEntityAPed(entity) and GetEntityHealth(entity) == 0 then  -- this jitters the damage number when you kill a ped
                 positionOffset = RandomOffset(positionOffset, offsetIntensity * 10)
-            elseif Settings['offset_mode'] == 'float' then  -- this is complex
-                -- https://math.stackexchange.com/questions/604324/find-a-point-n-distance-away-from-a-specified-point-in-a-given-direction
-                local angle = math.atan2(positionOffset.x, positionOffset.y) - math.atan2(_x, _y)
-
-                positionOffset.x = positionOffset.x + math.cos(angle) * Settings['offset_mode_fly_speed']
-                positionOffset.y = positionOffset.y + math.sin(angle) * Settings['offset_mode_fly_speed']
-                onScreen = true -- compromise for legacy fly
-            elseif Settings['offset_mode'] == 'fly' then
-                if fadeCounter == 255 then  -- this will always be the first tick, and we can calculate ricochet if we are on the first tick
-                    print('WIP')
-                end
-                -- GOAL - Get 3D world space positions for these 
-                -- Basically, we're gonna do a 3d simulation for an invisible object that is the origin of the 2d text
-                -- I'm probably really in over my head with this one.
-
-                -- This might be scrapped
-                print('Function not yet implemented')
             end
+            -- if Settings['offset_mode'] == 'jitter' then
+            --     positionOffset = RandomOffset(positionOffset, offsetIntensity * 10)
+            -- elseif Settings['offset_mode'] == 'float' then  -- this is complex
+            --     -- https://math.stackexchange.com/questions/604324/find-a-point-n-distance-away-from-a-specified-point-in-a-given-direction
+            --     local angle = math.atan2(positionOffset.x, positionOffset.y) - math.atan2(_x, _y)
+
+            --     positionOffset.x = positionOffset.x + math.cos(angle) * Settings['offset_mode_fly_speed']
+            --     positionOffset.y = positionOffset.y + math.sin(angle) * Settings['offset_mode_fly_speed']
+            --     onScreen = true -- compromise for legacy fly
+            -- elseif Settings['offset_mode'] == 'fly' then
+            --     if fadeCounter == 255 then  -- this will always be the first tick, and we can calculate ricochet if we are on the first tick
+            --         print('WIP')
+            --     end
+            --     -- GOAL - Get 3D world space positions for these 
+            --     -- Basically, we're gonna do a 3d simulation for an invisible object that is the origin of the 2d text
+            --     -- I'm probably really in over my head with this one.
+
+            --     -- This might be scrapped
+            --     print('Function not yet implemented')
+            -- end
             -- local distance = GetDistanceBetweenCoords(camPos.x, camPos.y, camPos.z, position.x, position.y, position.xyz.z, 1)
             -- local scale = (1 / distance) * (perspectiveScale) * (1 / GetFinalRenderedCamFov()) * 75
 

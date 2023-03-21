@@ -2,6 +2,8 @@
 
 This script displays damage next to entities that you have hurt.
 
+When you kill a ped, the damage number will jitter around.
+
 ## Commands
 
 `/showhealth` | Show how much health a vehicle currently has.
