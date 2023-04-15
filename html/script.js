@@ -58,6 +58,18 @@ function sendPrecision(precision) {
   xhr.send(JSON.stringify({'precision': Number(precision)}));
 }
 
+function sendVehicleIgnore(ignore_vehicle) {
+  if (ignore_vehicle == null) {
+    ignore_vehicle = true
+    localStorage.setItem('vehicleignore', ignore_vehicle)
+  }
+
+  let xhr = new XMLHttpRequest();
+  xhr.open("POST", "https://ewdamagenumbers/ignorevehiclestatus", true);
+  xhr.send(JSON.stringify({'vehicleignore': ensureBoolean(ignore_vehicle)}));
+}
+
+
 
 // handle setting changes
 
@@ -79,6 +91,12 @@ function localdmgtoggle(damage_local) {
   localStorage.setItem('localdmg', damage_local);
 
   sendLocalDamage(damage_local);
+}
+
+function ignorevehicletoggle(ignore_vehicle) {
+  localStorage.setItem('vehicleignore', ignore_vehicle);
+
+  sendVehicleIgnore(ignore_vehicle);
 }
 
 function precisionupdate(precision) {
@@ -115,6 +133,7 @@ window.addEventListener("message", function (event) {
     let prec = Number(localStorage.getItem('precision'));
     document.getElementById('precisionrange').value = prec;
     document.getElementById('precisionshow').value = prec;
+    document.getElementById('ignorevehicleonoff').checked = ensureBoolean(localStorage.getItem('vehicleignore'));
     $(".dmgmenu").show()
   } else {
     $(".dmgmenu").hide();

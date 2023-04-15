@@ -15,6 +15,7 @@ files {
     'html/style.css',
 }
 
+client_script 'dmgconfig.lua'
 client_script 'dataview.lua'
 client_script 'dmgclient.lua'
 client_script 'dmghud.lua'

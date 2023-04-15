@@ -1,16 +1,19 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous"/>
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@100;300&display=swap" rel="stylesheet">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <link rel="stylesheet" href="style.css">
-    <script onload='loadDefaults();' src="./script.js"></script>
-  </head>
+
+<head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w=="
+    crossorigin="anonymous" />
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@100;300&display=swap" rel="stylesheet">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <script onload='loadDefaults();' src="./script.js"></script>
+</head>
 
 <body>
-<div class="dmgmenu" hidden>
+  <div class="dmgmenu" hidden>
     <h1 id="toptext">EWDamageNumbers by Elena Winters</h1>
     <!-- <input type="checkbox" id="toptextcheck" class="cm-toggle" onclick="testtoggle(this.checked)" checked>
     <label for="toptext"><span style="font-size: 17.5px;"></span>Enabled</label> -->
@@ -19,33 +22,45 @@
     <h1 style="color: white; margin-bottom: 2.5px;">Settings</h1>
     <br>
     <ul>
-        <li>
-          <input type="checkbox" id="dynamicfadeonoff" class="cm-toggle" onclick="dynamicfadetoggle(this.checked)" checked>
-          <label for="dynamicfadeonoff"><span style="font-size: 17.5px;"></span>Dynamic Fade</label>
+      <li>
+        <input type="checkbox" id="dynamicfadeonoff" class="cm-toggle" onclick="dynamicfadetoggle(this.checked)"
+          checked>
+        <label for="dynamicfadeonoff"><span style="font-size: 17.5px;"></span>Dynamic Fade</label>
 
-          <input type="range" id="fadespeedrange" value="5" class="cm-slider" min="0.1" max="9" step="0.1" onchange="fadespeedupdate(this.value)" disabled>
-          <input type="text" id="fadespeedshow" value="5" size="1" style="text-align:center;" disabled>
-          <label for="fadespeedrange"><span style="font-size: 17.5px;">Fade Speed (Higher = Faster)</span></label>
-        </li>
+        <input type="range" id="fadespeedrange" value="5" class="cm-slider" min="0.1" max="9" step="0.1"
+          onchange="fadespeedupdate(this.value)" disabled>
+        <input type="text" id="fadespeedshow" value="5" size="1" style="text-align:center;" disabled>
+        <label for="fadespeedrange"><span style="font-size: 17.5px;">Fade Speed (Higher = Faster)</span></label>
+      </li>
     </ul>
     <br>
     <ul>
-        <li><input type="checkbox" id="localdmgonoff" class="cm-toggle" onclick="localdmgtoggle(this.checked)" checked>
-        <label for="localdmgonoff">Local Damage (Only Render Damage Received or Done)</label></li>
+      <li><input type="checkbox" id="localdmgonoff" class="cm-toggle" onclick="localdmgtoggle(this.checked)" checked>
+        <label for="localdmgonoff">Local Damage (Only Render Damage Received or Done)</label>
+      </li>
 
     </ul>
     <br>
     <ul>
-        <li><label class="precision "><span style="font-size: 17.5px;"></span>Fractional Precision</label>
-        <input type="range" id="precisionrange" value="2" class="cm-slider" min="0" max="12" step="1" onchange="precisionupdate(this.value)">
+      <li><label class="precision"><span style="font-size: 17.5px;"></span>Fractional Precision</label>
+        <input type="range" id="precisionrange" value="2" class="cm-slider" min="0" max="12" step="1"
+          onchange="precisionupdate(this.value)">
         <input type="text" id="precisionshow" value="2" size="1" style="text-align:center;" disabled>
         <label for="precisionrange"><span style="font-size: 17.5px;">(Number of Fractional Digits)</span></label>
       </li>
+    </ul>
+    <br>
+    <ul>
+      <li><input type="checkbox" id="ignorevehicleonoff" class="cm-toggle" onclick="ignorevehicletoggle(this.checked)" checked>
+        <label for="ignorevehicleonoff">Ignore Vehicles</label>
+      </li>
+
     </ul>
     <br>
 
     <!-- <h1 style="color: white; margin-bottom: 2.5px;">Vehicle</h1>
     <input type="checkbox" id="speedonoff" class="cm-toggle" onclick="speedtoggle()" checked> -->
 
-</div>
-</html>                         
+  </div>
+
+</html>

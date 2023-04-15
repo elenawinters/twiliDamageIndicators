@@ -5,44 +5,7 @@
 
 TrackedEntities = {}
 
-ValidFonts = { -- 2 is a numbers font, 3 is a symbols font in both games
-    ['fivem'] = {
-        ['default'] = 0,  -- 5 is the same
-        ['italics'] = 1,
-        ['compact'] = 4,  -- 6 is the same
-        ['vice'] = 7,
-    },
-    ['redm'] = {
-        ['default'] = 0,
-        ['bold'] = 1,
-        ['transparent'] = 4,
-        ['fancy'] = 6
-    }
-}
-
 -- OffsetModes = {'default', 'jitter', 'fly'}
-
-DefaultSettings = {
-    ['precision'] = 2,  -- fractional precision
-    ['fade_speed'] = 5,
-    ['dynamic_fade'] = true,
-    ['local_damage'] = true,
-    ['writhe_speak'] = true,  -- setting not yet implemented
-    ['detached'] = true,  -- detached will be the default. attached will be difficult to make
-    -- ['offset_mode'] = 'jitter',
-    ['offset_intensity'] = 50,
-    -- ['offset_mode_fly_speed'] = 0.0025,
-    -- ['offset_mode_fly_direction'] = nil,
-    ['render_font'] = ValidFonts['default'],  -- setting not yet implemented in UI, /testfont <number (0, 1, 4, 7)> can be used but it doesn't save.
-    ['color'] = {  -- settings not yet implemented
-        ['damage_vehicle_ding'] = {154, 154, 154},
-        ['damage_entity'] = {224, 50, 50},
-        ['damage_armor'] = {93, 182, 229},
-        ['entity_writhe'] = {169, 0, 0},
-    }
-}
-
-Settings = DefaultSettings
 
 BUILD = GetGameBuildNumber()
 GAME = GetGameName()
@@ -62,6 +25,10 @@ end)
 
 RegisterNUICallback('dynamicfadestatus', function(data)
     Settings['dynamic_fade'] = data.dynamicfade
+end)
+
+RegisterNUICallback('ignorevehiclestatus', function(data)
+    Settings['ignore_vehicles'] = data.vehicleignore
 end)
 
 RegisterNUICallback('fadespeedstatus', function(data)
@@ -362,6 +329,12 @@ if GAME == 'fivem' then
             if suspect ~= PlayerPedId() and victim ~= PlayerPedId() and Settings['local_damage'] == true then
                 return
             end
+
+            if Settings['ignore_vehicles'] then
+                if IsEntityAVehicle(victim) then
+                    return
+                end
+            end
     
             local offset = 0
             
@@ -448,6 +421,12 @@ elseif GAME == 'redm' then  -- RedM doesn't have the `gameEventTriggered` handle
     function RenderStepRDR3(victim, suspect, defaultPosition, value)  -- there is a return, and if you return in the above Thread, it exits the thread
         if suspect ~= PlayerPedId() and victim ~= PlayerPedId() and Settings['local_damage'] == true then
             return  -- if i'm not a victim or suspect, and I only want to show my damage, return
+        end
+
+        if Settings['ignore_vehicles'] then
+            if IsEntityAVehicle(victim) then
+                return
+            end
         end
 
         -- TODO: OneSync causes issues relating to the activation of the Game Event. We need to fix it.
