@@ -329,12 +329,6 @@ if GAME == 'fivem' then
             if suspect ~= PlayerPedId() and victim ~= PlayerPedId() and Settings['local_damage'] == true then
                 return
             end
-
-            if Settings['ignore_vehicles'] then
-                if IsEntityAVehicle(victim) then
-                    return
-                end
-            end
     
             local offset = 0
             
@@ -387,15 +381,24 @@ if GAME == 'fivem' then
                 end
             end
 
-            local dmg = CalculateHealthLost(victim)
-            if IsEntityAPed(victim) and IsPedFatallyInjured(victim) and dmg.h ~= 0 then
-                DrawDamageText(position, round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
-            else
-                DrawDamageText(position, round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
+            skip_damage_render = false
+            if Settings['ignore_vehicles'] then
+                if IsEntityAVehicle(victim) then
+                    skip_damage_render = true
+                end
             end
 
-            if dmg.a ~= 0 then
-                DrawDamageText(position, round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
+            local dmg = CalculateHealthLost(victim)
+            if not skip_damage_render then
+                if IsEntityAPed(victim) and IsPedFatallyInjured(victim) and dmg.h ~= 0 then
+                    DrawDamageText(position, round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
+                else
+                    DrawDamageText(position, round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
+                end
+
+                if dmg.a ~= 0 then
+                    DrawDamageText(position, round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
+                end
             end
 
             if damageType == 93 then
