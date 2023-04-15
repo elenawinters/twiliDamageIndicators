@@ -12,6 +12,7 @@ function loadDefaults() {
   sendFadeSpeed(localStorage.getItem('fadespeed'));
   sendLocalDamage(localStorage.getItem('localdmg'));
   sendPrecision(localStorage.getItem('precision'));
+  sendVehicleIgnore(localStorage.getItem('vehicleignore'));
 }
 
 function sendDynamicFade(dynamic_fade) {
