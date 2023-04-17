@@ -318,6 +318,14 @@ if GAME == 'fivem' then
 
     end)
 
+    -- Future plans
+    -- use CEventDamage to get damage done to you and damage you do to locals
+    -- Tell server that you did that
+    -- Server will tell other clients
+    -- This way a desync cannot occur due to the networked entity damage.
+    -- This still isn't ideal though
+    -- This will happen with the JavaScript rewrite
+
     -- use GetWeaponTimeBetweenShots to get dynamic fade speed per weapon
     -- use log 0.7 (x) to get Fade Speed from TimeBetweenShots. If output is below 0.1, keep it at 0.1. Refine later
     AddEventHandler('gameEventTriggered', function (eventName, data)
