@@ -34,3 +34,7 @@ const DefaultSettings = {
 };
 
 let Settings = DefaultSettings;
+
+const DebugFlags = {
+    'prefer_pvp': true
+}
