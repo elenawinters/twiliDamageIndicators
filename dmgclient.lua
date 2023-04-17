@@ -320,6 +320,67 @@ if GAME == 'fivem' then
 
     -- use GetWeaponTimeBetweenShots to get dynamic fade speed per weapon
     -- use log 0.7 (x) to get Fade Speed from TimeBetweenShots. If output is below 0.1, keep it at 0.1. Refine later
+    AddEventHandler('CEventDamage', function (victims, suspect)
+        for k, victim in ipairs(victims) do
+
+            if suspect ~= PlayerPedId() and victim ~= PlayerPedId() and Settings['local_damage'] == true then
+                return
+            end
+    
+            
+            local position, entity = RaycastFromPlayer()
+            if entity ~= victim then
+                if IsEntityAPed(victim) then
+                    if IsEntityDead(victim) and GetPedCauseOfDeath(victim) == 0 then
+                        position = GetPedBoneCoords(victim, 0x60F1)  -- spine2
+                    else
+                        local success, bone = GetPedLastDamageBone(victim)
+                        if success then  -- a valid bone was found, good job!
+                            position = GetPedBoneCoords(victim, bone)
+                        else
+                            position = GetPedBoneCoords(victim, 0x60F1)  -- spine2
+                        end
+                    end
+                else
+                    position = GetEntityCoords(victim)  -- this needs to be set somehow
+                end
+            end
+
+            local fadeRate = Settings['fade_speed']
+            if GetWeaponDamageType(GetPedCauseOfDeath(victim)) == 2 and Settings['dynamic_fade'] then
+                fadeRate = math.log(GetWeaponTimeBetweenShots(weaponHash), 0.7)
+                if fadeRate <= 1 then
+                    fadeRate = 1
+                end
+                if fadeRate == 1e309 then  -- infinities MONKAS
+                    fadeRate = 5
+                end
+            end
+            -- table.insert(entities, v)
+
+            skip_damage_render = false
+            if Settings['ignore_vehicles'] then
+                if IsEntityAVehicle(victim) then
+                    skip_damage_render = true
+                end
+            end
+
+            local dmg = CalculateHealthLost(victim)
+            if not skip_damage_render then
+                if IsEntityAPed(victim) and IsPedFatallyInjured(victim) and dmg.h ~= 0 then
+                    DrawDamageText(position, round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
+                else
+                    DrawDamageText(position, round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
+                end
+
+                if dmg.a ~= 0 then
+                    DrawDamageText(position, round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
+                end
+            end
+
+        end
+    end)
+
     AddEventHandler('gameEventTriggered', function (eventName, data)
         if eventName == 'CEventNetworkEntityDamage' then  -- network events are unreliable with multiple players
             local victim = data[1]
@@ -370,36 +431,36 @@ if GAME == 'fivem' then
                 end
             end
 
-            local fadeRate = Settings['fade_speed']
-            if isMelee == 0 and Settings['dynamic_fade'] then
-                fadeRate = math.log(GetWeaponTimeBetweenShots(weaponHash), 0.7)
-                if fadeRate <= 1 then
-                    fadeRate = 1
-                end
-                if fadeRate == 1e309 then  -- infinities MONKAS
-                    fadeRate = 5
-                end
-            end
+            -- local fadeRate = Settings['fade_speed']
+            -- if isMelee == 0 and Settings['dynamic_fade'] then
+            --     fadeRate = math.log(GetWeaponTimeBetweenShots(weaponHash), 0.7)
+            --     if fadeRate <= 1 then
+            --         fadeRate = 1
+            --     end
+            --     if fadeRate == 1e309 then  -- infinities MONKAS
+            --         fadeRate = 5
+            --     end
+            -- end
 
-            skip_damage_render = false
-            if Settings['ignore_vehicles'] then
-                if IsEntityAVehicle(victim) then
-                    skip_damage_render = true
-                end
-            end
+            -- skip_damage_render = false
+            -- if Settings['ignore_vehicles'] then
+            --     if IsEntityAVehicle(victim) then
+            --         skip_damage_render = true
+            --     end
+            -- end
 
-            local dmg = CalculateHealthLost(victim)
-            if not skip_damage_render then
-                if IsEntityAPed(victim) and IsPedFatallyInjured(victim) and dmg.h ~= 0 then
-                    DrawDamageText(position, round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
-                else
-                    DrawDamageText(position, round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
-                end
+            -- local dmg = CalculateHealthLost(victim)
+            -- if not skip_damage_render then
+            --     if IsEntityAPed(victim) and IsPedFatallyInjured(victim) and dmg.h ~= 0 then
+            --         DrawDamageText(position, round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
+            --     else
+            --         DrawDamageText(position, round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
+            --     end
 
-                if dmg.a ~= 0 then
-                    DrawDamageText(position, round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
-                end
-            end
+            --     if dmg.a ~= 0 then
+            --         DrawDamageText(position, round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
+            --     end
+            -- end
 
             if damageType == 93 then
                 DrawDamageText(position, 'Pop!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim) -- tire damage
