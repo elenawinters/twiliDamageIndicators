@@ -262,34 +262,6 @@ function CalculateHealthLost(ent) {
     return {h: health, a: armor};
 }
 
-function RotationToDirection(deg) {
-    let rad_x = deg[0] * 0.0174532924;
-    let rad_z = deg[1] * 0.0174532924;
-
-    let dir_x = -Math.sin(rad_z) * Math.cos(rad_x);
-    let dir_y = Math.cos(rad_z) * Math.cos(rad_x);
-    let dir_z = Math.sin(rad_x);
-    let dir = [dir_x, dir_y, dir_z];
-    return dir;
-}
-
-function RaycastFromPlayer() {
-    const playerPed = PlayerPedId();
-    const camCoord = GetGameplayCamCoord();
-    const camRot = GetGameplayCamRot(0);
-
-    const dirRot = RotationToDirection(camRot).map(function(x) { return x * 1000; });
-    // console.log(RotationToDirection(camRot));
-
-    let rayHandle = StartShapeTestRay(camCoord, camCoord.map(function (num, idx) {return num + dirRot[idx]; }), -1, playerPed);
-    let [, , endCoords, , entityHit] = GetShapeTestResult(rayHandle);
-
-    return [endCoords, entityHit]
-    //     'position': endCoords, 
-    //     'entity': entityHit
-    // }
-}
-
 if (GAME == FIVEM) {
     setTick(async () => {
         await Delay(1000);
@@ -317,6 +289,12 @@ if (GAME == FIVEM) {
             } else { clearTick(thread); }
             await Delay(500);
         })
+
+    })
+
+    on('CEventDamage', function (victims, suspect) {
+        console.log(victims);
+        console.log(suspect);
 
     })
 
@@ -350,13 +328,9 @@ if (GAME == FIVEM) {
         // Maybe, when I clean up everything. It'll be an easter egg that can be toggled
         // console.log(`victimDied? ${victimDied}`)
 
-        let [position, entity] = RaycastFromPlayer();
-        console.log(position)
-        console.log(entity)
-        // let position = raycast.position;
-        // let entity = raycast.entity;
-
-        if (entity != victim) {
+        // Eliminated the raycast, hell yeah
+        let [, position] = GetPedLastWeaponImpactCoord(suspect);
+        if (IsEntityAtCoord(victim, position, [1, 1, 1], 0, 1, 0)) {
             if (IsEntityAPed(victim)) {
                 if (victimDied && GetPedCauseOfDeath(victim) == 0) {
                     position = GetPedBoneCoords(victim, 0x60F1);
