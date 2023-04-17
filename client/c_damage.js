@@ -211,6 +211,7 @@ function MergeVehicleHealths(veh) {
 // console.log(`${key}: ${value}`);
 function TrackEntityHealth() {
     // MERGE DIFFERENT ENTITY GROUPS
+    TrackedEntities = {};
     let entities = GetActivePlayers();
 
     for (let [, value] of Object.entries(GetGamePool('CPed'))) {
@@ -234,16 +235,16 @@ function TrackEntityHealth() {
         // entities.push(value)
     }
 
-    // // UPDATE TRACKEDENTITIES TO REMOVE VOID ENTITIES
-    // for (let [, ent] of Object.entries(TrackedEntities)) {
-    //     if (!entities.includes(ent) && TrackedEntities.includes(ent)) {
-    //         const index = TrackedEntities.indexOf(ent);
-    //         if (index > -1) {
-    //             TrackedEntities.splice(index, 1);
-    //             console.log(`Removed ${ent} from tracking list (index of ${index})`);
-    //         }
-    //     }
-    // }
+    // UPDATE TRACKEDENTITIES TO REMOVE VOID ENTITIES
+    for (let [, ent] of Object.entries(TrackedEntities)) {
+        if (!entities.hasOwnProperty(ent) && TrackedEntities.hasOwnProperty(ent)) {
+            const index = TrackedEntities.indexOf(ent);
+            if (index > -1) {
+                TrackedEntities.splice(index, 1);
+                console.log(`Removed ${ent} from tracking list (index of ${index})`);
+            }
+        }
+    }
 }
 
 function CalculateHealthLost(ent) {
@@ -261,6 +262,42 @@ function CalculateHealthLost(ent) {
     }
     return {h: health, a: armor};
 }
+
+function CalculateDamagePosition(suspect, victim) {
+    let [, position] = GetPedLastWeaponImpactCoord(suspect);
+    if (IsEntityAtCoord(victim, position, [1, 1, 1], 0, 1, 0)) {
+        if (IsEntityAPed(victim)) {
+            if (victimDied && GetPedCauseOfDeath(victim) == 0) {
+                position = GetPedBoneCoords(victim, 0x60F1);
+            } else {
+                let [success, bone] = GetPedLastDamageBone(victim);
+                if (success) {
+                    position = GetPedBoneCoords(victim, bone);
+                } else {
+                    position = GetPedBoneCoords(victim, 0x60F1);
+                }
+            }
+        } else {
+            position = GetEntityCoords(victim);
+        }
+    }
+    return position
+}
+
+onNet('ewdamagenumbers:sync_others', (suspect, victim, dmg, position) => {
+    console.log(dmg)
+    const fadeRate = 1;
+    if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {
+        DrawDamageText(position, Math.round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
+    } else {
+        DrawDamageText(position, Math.round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
+    }
+    
+    if (dmg.a != 0) {
+        DrawDamageText(position, Math.round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
+    }
+
+});
 
 if (GAME == FIVEM) {
     setTick(async () => {
@@ -293,106 +330,125 @@ if (GAME == FIVEM) {
     })
 
     on('CEventDamage', function (victims, suspect) {
-        console.log(victims);
-        console.log(suspect);
+        // console.log(victims);
+        // console.log(suspect);
+        for (let [, victim] of Object.entries(victims)) {
+            // console.log(typeof victim);
+            const dmg = CalculateHealthLost(victim);
+            const position = CalculateDamagePosition(suspect, victim);
+
+            emitNet("ewdamagenumbers:update_others", suspect, victim, dmg, position);
+        }
+        // if (!skip_damage_render) {
+        //     if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {
+        //         DrawDamageText(position, Math.round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
+        //     } else {
+        //         DrawDamageText(position, Math.round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
+        //     }
+            
+        //     if (dmg.a != 0) {
+        //         DrawDamageText(position, Math.round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
+        //     }
+        // }
 
     })
 
     // use GetWeaponTimeBetweenShots to get dynamic fade speed per weapon
     // use log 0.7 (x) to get Fade Speed from TimeBetweenShots. If output is below 0.1, keep it at 0.1. Refine later
-    on('gameEventTriggered', function (eventName, data) {
-        if (eventName != 'CEventNetworkEntityDamage') { return; }
+    // on('gameEventTriggered', function (eventName, data) {
+    //     if (eventName != 'CEventNetworkEntityDamage') { return; }
 
-        const victim = data[0];
-        const suspect = data[1];
+    //     const victim = data[0];
+    //     console.log(typeof victim);
+    //     const suspect = data[1];
 
-        if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings['local_damage']) { return; }
+    //     if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings['local_damage']) { return; }
 
-        let offset = 0;
+    //     let offset = 0;
 
-        if (BUILD >= 2060) {
-            offset++;
-            if (BUILD >= 2189) {
-                offset++;
-            }
-        }
+    //     if (BUILD >= 2060) {
+    //         offset++;
+    //         if (BUILD >= 2189) {
+    //             offset++;
+    //         }
+    //     }
 
-        const victimDied = data[3 + offset];
-        const weaponHash = data[4 + offset];
-        const isMelee = data[9 + offset];
-        const damageType = data[10 + offset];
+    //     const victimDied = data[3 + offset];
+    //     const weaponHash = data[4 + offset];
+    //     const isMelee = data[9 + offset];
+    //     const damageType = data[10 + offset];
 
-        // Would it be funny to render blood drop emotes twice a second for ten seconds when the below is true?
-        // Yes.
-        // Am I gonna do it...?
-        // Maybe, when I clean up everything. It'll be an easter egg that can be toggled
-        // console.log(`victimDied? ${victimDied}`)
+    //     // Would it be funny to render blood drop emotes twice a second for ten seconds when the below is true?
+    //     // Yes.
+    //     // Am I gonna do it...?
+    //     // Maybe, when I clean up everything. It'll be an easter egg that can be toggled
+    //     // console.log(`victimDied? ${victimDied}`)
 
-        // Eliminated the raycast, hell yeah
-        let [, position] = GetPedLastWeaponImpactCoord(suspect);
-        if (IsEntityAtCoord(victim, position, [1, 1, 1], 0, 1, 0)) {
-            if (IsEntityAPed(victim)) {
-                if (victimDied && GetPedCauseOfDeath(victim) == 0) {
-                    position = GetPedBoneCoords(victim, 0x60F1);
-                } else {
-                    let [success, bone] = GetPedLastDamageBone(victim);
-                    if (success) {
-                        position = GetPedBoneCoords(victim, bone);
-                    } else {
-                        position = GetPedBoneCoords(victim, 0x60F1);
-                    }
-                }
-            } else {
-                position = GetEntityCoords(victim);
-            }
-        }
+    //     // Eliminated the raycast, hell yeah
+    //     let [, position] = GetPedLastWeaponImpactCoord(suspect);
+    //     if (IsEntityAtCoord(victim, position, [1, 1, 1], 0, 1, 0)) {
+    //         if (IsEntityAPed(victim)) {
+    //             if (victimDied && GetPedCauseOfDeath(victim) == 0) {
+    //                 position = GetPedBoneCoords(victim, 0x60F1);
+    //             } else {
+    //                 let [success, bone] = GetPedLastDamageBone(victim);
+    //                 if (success) {
+    //                     position = GetPedBoneCoords(victim, bone);
+    //                 } else {
+    //                     position = GetPedBoneCoords(victim, 0x60F1);
+    //                 }
+    //             }
+    //         } else {
+    //             position = GetEntityCoords(victim);
+    //         }
+    //     }
 
-        let fadeRate = Settings['fade_speed']
-        if (isMelee == 0 && Settings['dynamic_fade']) {
-            fadeRate = Math.log(GetWeaponTimeBetweenShots(weaponHash)) / Math.log(0.7)
-            if (fadeRate == Infinity) {
-                fadeRate = 5
-            } else if (fadeRate <= 1) {
-                fadeRate = 1
-            }
-        }
+    //     let fadeRate = Settings['fade_speed']
+    //     if (isMelee == 0 && Settings['dynamic_fade']) {
+    //         fadeRate = Math.log(GetWeaponTimeBetweenShots(weaponHash)) / Math.log(0.7)
+    //         if (fadeRate == Infinity) {
+    //             fadeRate = 5
+    //         } else if (fadeRate <= 1) {
+    //             fadeRate = 1
+    //         }
+    //     }
 
-        let skip_damage_render = false
-        if (Settings['ignore_vehicles']) {
-            if (IsEntityAVehicle(victim)) {
-                skip_damage_render = true
-            }
-        }
+    //     let skip_damage_render = false
+    //     if (Settings['ignore_vehicles']) {
+    //         if (IsEntityAVehicle(victim)) {
+    //             skip_damage_render = true
+    //         }
+    //     }
 
-        let dmg = CalculateHealthLost(victim)
-        if (!skip_damage_render) {
-            if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {
-                DrawDamageText(position, Math.round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
-            } else {
-                DrawDamageText(position, Math.round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
-            }
+    //     let dmg = CalculateHealthLost(victim)
+    //     if (!skip_damage_render) {
+    //         if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {
+    //             DrawDamageText(position, Math.round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
+    //         } else {
+    //             DrawDamageText(position, Math.round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
+    //         }
             
-            if (dmg.a != 0) {
-                DrawDamageText(position, Math.round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
-            }
-        }
+    //         if (dmg.a != 0) {
+    //             DrawDamageText(position, Math.round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
+    //         }
+    //     }
 
 
-        switch (damageType) {
-            case 93:
-                DrawDamageText(position, 'Pop!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim) // tire damage
-                break;
-            case 116:
-            case 117:  // 117 happens with the exhaust pipe of the Imponte Pheonix. No idea what this is, putting it here for now.
-                DrawDamageText(position, 'Ding!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim)  // general vehicle damage
-                break;
-            case 120:
-            case 121:
-            case 122:
-                DrawDamageText(position, 'Smash!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim)  // window damage
-                break;
-        }
-    })
+    //     switch (damageType) {
+    //         case 93:
+    //             DrawDamageText(position, 'Pop!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim) // tire damage
+    //             break;
+    //         case 116:
+    //         case 117:  // 117 happens with the exhaust pipe of the Imponte Pheonix. No idea what this is, putting it here for now.
+    //             DrawDamageText(position, 'Ding!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim)  // general vehicle damage
+    //             break;
+    //         case 120:
+    //         case 121:
+    //         case 122:
+    //             DrawDamageText(position, 'Smash!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim)  // window damage
+    //             break;
+    //     }
+    // })
 }
 // } else if (GAME == REDM) {
 //     function RenderStepRDR3(victim, suspect, defaultPosition, value) {
