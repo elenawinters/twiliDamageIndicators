@@ -33,43 +33,43 @@ RegisterNuiCallback('cancel', () => {
 
 
 RegisterNuiCallback('dynamicfadestatus', (data) => {
-    Settings['dynamic_fade'] = data.dynamicfade;
+    Settings.dynamic_fade = data.dynamicfade;
 });
 
 RegisterNuiCallback('ignorevehiclestatus', (data) => {
-    Settings['ignore_vehicles'] = data.vehicleignore
+    Settings.ignore_vehicles = data.vehicleignore
 });
 
 RegisterNuiCallback('fadespeedstatu', (data) => {
-    Settings['fade_speed'] = data.fadespeed
+    Settings.fade_speed = data.fadespeed
 });
 
 RegisterNuiCallback('localdmgstatus', (data) => {
-    Settings['local_damage'] = data.localdmg
+    Settings.local_damage = data.localdmg
 });
 
 RegisterNuiCallback('precisionstatus', (data) => {
-    Settings['precision'] = data.precision
+    Settings.precision = data.precision
 });
 
 
 
 RegisterCommand('testfont', (source, args) => {
-    Settings['render_font'] = parseInt(args[0])
+    Settings.render_font = parseInt(args[0])
     TriggerEvent('chat:addMessage', {
         color: [255, 0, 0],
         multiline: true,
-        args: {"Debug": `Pbttt testing font number ${Settings['render_font']}`}
+        args: {"Debug": `Pbttt testing font number ${Settings.render_font}`}
     });
 });
 
 
 RegisterCommand('testoffset', (source, args) => {
-    Settings['offset_intensity'] = parseInt(args[0])
+    Settings.offset_intensity = parseInt(args[0])
     TriggerEvent('chat:addMessage', {
         color: [255, 0, 0],
         multiline: true,
-        args: {"Debug": `Random offset intensity is now ${Settings['offset_intensity']}`}
+        args: {"Debug": `Random offset intensity is now ${Settings.offset_intensity}`}
     });
 });
 
@@ -111,12 +111,12 @@ function RandomOffset(position, intensity) {  // i'll eventually simplify this b
 };
 
 function DrawDamageText(position, value, color, size = 1, rate, entity) {
-    const is_render_dynamic = Settings['dynamic_fade'];
-    if (rate == null) { rate = Settings['fade_speed'] };
+    const is_render_dynamic = Settings.dynamic_fade;
+    if (rate == null) { rate = Settings.fade_speed };
     // checks if the timeout is true
-    const offsetIntensity = Settings['offset_intensity'];
+    const offsetIntensity = Settings.offset_intensity;
     const positionOffsetBase = RandomOffset([0, 0], offsetIntensity);
-    const font = Settings['render_font'];
+    const font = Settings.render_font;
     const textOutline = true;
     let fadeCounter = 255;
     let currentAlpha = fadeCounter;
@@ -185,7 +185,7 @@ function DrawDamageText(position, value, color, size = 1, rate, entity) {
             }
         }
         if (!is_render_dynamic) {  // people who use a static fade want it to update instantly
-            rate = Settings['fade_speed'];
+            rate = Settings.fade_speed;
         }
         fadeCounter = fadeCounter - rate;
         // currentAlpha = +Math.round(fadeCounter).toFixed(0)
@@ -263,10 +263,19 @@ function CalculateHealthLost(ent) {
     return {h: health, a: armor};
 }
 
-function CalculateDamagePosition(suspect, victim) {
+function CalculateDamagePosition(suspect, victim, victimDied) {
+    // let [, position] = GetPedLastWeaponImpactCoord(suspect);
+    // IsEntityAtCoord(victim, position, [10, 10, 10], 0, 1, 0)
     let [, position] = GetPedLastWeaponImpactCoord(suspect);
-    if (IsEntityAtCoord(victim, position, [1, 1, 1], 0, 1, 0)) {
+    // console.log(position)
+    // console.log(typeof position)
+    // if (IsEntityAtCoord(victim, position, [1, 1, 1], 0, 1, 0) || position == [0, 0, 0]) {
+    if (position[0] == 0 && position[1] == 0 && position[2] == 0) {
+        console.log('Position failure, trying backup')
+        position = GetEntityCoords(victim);
+        // position = [69, 69, 69]
         if (IsEntityAPed(victim)) {
+            if (victimDied == undefined) { victimDied = IsPedFatallyInjured(victim); }
             if (victimDied && GetPedCauseOfDeath(victim) == 0) {
                 position = GetPedBoneCoords(victim, 0x60F1);
             } else {
@@ -277,24 +286,38 @@ function CalculateDamagePosition(suspect, victim) {
                     position = GetPedBoneCoords(victim, 0x60F1);
                 }
             }
-        } else {
-            position = GetEntityCoords(victim);
         }
+        // } else {
+        //     position = GetEntityCoords(victim);
+        // }
     }
     return position
 }
 
+function CalculateFadeRate(isMelee, weaponHash) {
+    let fadeRate = Settings.fade_speed;
+
+    if (isMelee == 0 && Settings.dynamic_fade) {
+        fadeRate = Math.log(GetWeaponTimeBetweenShots(weaponHash)) / Math.log(0.7);
+        if (fadeRate == Infinity) {
+            fadeRate = 5;
+        } else if (fadeRate <= 1) {
+            fadeRate = 1;
+        }
+    }
+}
+
 onNet('ewdamagenumbers:sync_others', (suspect, victim, dmg, position, fadeRate) => {
-    if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings['local_damage']) { return; }
+    if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings.local_damage) { return; }
 
     if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {
-        DrawDamageText(position, Math.round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
+        DrawDamageText(position, Math.round(-dmg.h + 100), Settings.color.damage_entity, 1, fadeRate, victim)
     } else {
-        DrawDamageText(position, Math.round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
+        DrawDamageText(position, Math.round(-dmg.h), Settings.color.damage_entity, 1, fadeRate, victim)
     }
     
     if (dmg.a != 0) {
-        DrawDamageText(position, Math.round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
+        DrawDamageText(position, Math.round(-dmg.a), Settings.color.damage_armor, 1, fadeRate, victim)
     }
 
 });
@@ -321,7 +344,7 @@ if (GAME == FIVEM) {
             if (!IsPedFatallyInjured(victim)) {
                 // items[Math.floor(Math.random()*items.length)]
                 // Colors likely need to be adjusted. TODO: Add a color wheel to the settings menu for all color related settings
-                DrawDamageText(GetPedBoneCoords(victim, 0xFE2C), writhe_says[Math.floor(Math.random()*writhe_says.length)], Settings['color']['entity_writhe'], 0.75);
+                DrawDamageText(GetPedBoneCoords(victim, 0xFE2C), writhe_says[Math.floor(Math.random()*writhe_says.length)], Settings.color.entity_writhe, 0.75);
                 // Delay(500);
             } else { clearTick(thread); }
             await Delay(500);
@@ -333,21 +356,13 @@ if (GAME == FIVEM) {
         // console.log(victims);
         // console.log(suspect);
         for (let [, victim] of Object.entries(victims)) {
-            // console.log(typeof victim);
+            if (!IsPedAPlayer(suspect) || !IsPedAPlayer(victim)) { return; }
+            console.log('it is PVE');
             const dmg = CalculateHealthLost(victim);
             const position = CalculateDamagePosition(suspect, victim);
             const weaponHash = GetPedCauseOfDeath(victim);
             const isMelee = GetWeaponDamageType(weaponHash) == 2;
-            let fadeRate = Settings['fade_speed'];
-
-            if (isMelee == 0 && Settings['dynamic_fade']) {
-                fadeRate = Math.log(GetWeaponTimeBetweenShots(weaponHash)) / Math.log(0.7);
-                if (fadeRate == Infinity) {
-                    fadeRate = 5;
-                } else if (fadeRate <= 1) {
-                    fadeRate = 1;
-                }
-            }
+            const fadeRate = CalculateFadeRate(isMelee, weaponHash);
 
             emitNet("ewdamagenumbers:update_others", suspect, victim, dmg, position, fadeRate);
         }
@@ -369,13 +384,16 @@ if (GAME == FIVEM) {
     // use log 0.7 (x) to get Fade Speed from TimeBetweenShots. If output is below 0.1, keep it at 0.1. Refine later
     on('gameEventTriggered', function (eventName, data) {
         if (eventName != 'CEventNetworkEntityDamage') { return; }
+        // console.log(Settings.color.damage_entity);
 
         const victim = data[0];
-        console.log(typeof victim);
+        // console.log(typeof victim);
         const suspect = data[1];
 
-        if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings['local_damage']) { return; }
-        if (DebugFlags.prefer_pvp == true && !(IsEntityAVehicle(suspect) || IsEntityAVehicle(victim))) { return; }
+        if (IsPedAPlayer(suspect) && IsPedAPlayer(victim)) { return; }
+
+        if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings.local_damage) { return; }
+        // if (DebugFlags.prefer_pvp == true && !IsEntityAVehicle(victim)) { return; }
         console.log('This should only show if it is a vehicle');
 
         let offset = 0;
@@ -398,37 +416,12 @@ if (GAME == FIVEM) {
         // Maybe, when I clean up everything. It'll be an easter egg that can be toggled
         // console.log(`victimDied? ${victimDied}`)
 
-        // Eliminated the raycast, hell yeah
-        let [, position] = GetPedLastWeaponImpactCoord(suspect);
-        if (IsEntityAtCoord(victim, position, [1, 1, 1], 0, 1, 0)) {
-            if (IsEntityAPed(victim)) {
-                if (victimDied && GetPedCauseOfDeath(victim) == 0) {
-                    position = GetPedBoneCoords(victim, 0x60F1);
-                } else {
-                    let [success, bone] = GetPedLastDamageBone(victim);
-                    if (success) {
-                        position = GetPedBoneCoords(victim, bone);
-                    } else {
-                        position = GetPedBoneCoords(victim, 0x60F1);
-                    }
-                }
-            } else {
-                position = GetEntityCoords(victim);
-            }
-        }
+        const position = CalculateDamagePosition(suspect, victim, victimDied);
 
-        let fadeRate = Settings['fade_speed']
-        if (isMelee == 0 && Settings['dynamic_fade']) {
-            fadeRate = Math.log(GetWeaponTimeBetweenShots(weaponHash)) / Math.log(0.7)
-            if (fadeRate == Infinity) {
-                fadeRate = 5
-            } else if (fadeRate <= 1) {
-                fadeRate = 1
-            }
-        }
+        const fadeRate = CalculateFadeRate(isMelee, weaponHash);
 
         let skip_damage_render = false
-        if (Settings['ignore_vehicles']) {
+        if (Settings.ignore_vehicles) {
             if (IsEntityAVehicle(victim)) {
                 skip_damage_render = true
             }
@@ -436,30 +429,31 @@ if (GAME == FIVEM) {
 
         let dmg = CalculateHealthLost(victim)
         if (!skip_damage_render) {
-            if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {
-                DrawDamageText(position, Math.round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
+            // if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
+            if (IsEntityAPed(victim) && victimDied && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
+                DrawDamageText(position, Math.round(-dmg.h + 100), Settings.color.damage_entity, 1, fadeRate, victim)
             } else {
-                DrawDamageText(position, Math.round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
+                DrawDamageText(position, Math.round(-dmg.h), Settings.color.damage_entity, 1, fadeRate, victim)
             }
             
             if (dmg.a != 0) {
-                DrawDamageText(position, Math.round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
+                DrawDamageText(position, Math.round(-dmg.a), Settings.color.damage_armor, 1, fadeRate, victim)
             }
         }
 
 
         switch (damageType) {
             case 93:
-                DrawDamageText(position, 'Pop!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim) // tire damage
+                DrawDamageText(position, 'Pop!', Settings.color.damage_vehicle_ding, 0.5, fadeRate, victim) // tire damage
                 break;
             case 116:
             case 117:  // 117 happens with the exhaust pipe of the Imponte Pheonix. No idea what this is, putting it here for now.
-                DrawDamageText(position, 'Ding!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim)  // general vehicle damage
+                DrawDamageText(position, 'Ding!', Settings.color.damage_vehicle_ding, 0.5, fadeRate, victim)  // general vehicle damage
                 break;
             case 120:
             case 121:
             case 122:
-                DrawDamageText(position, 'Smash!', Settings['color']['damage_vehicle_ding'], 0.5, fadeRate, victim)  // window damage
+                DrawDamageText(position, 'Smash!', Settings.color.damage_vehicle_ding, 0.5, fadeRate, victim)  // window damage
                 break;
         }
     })

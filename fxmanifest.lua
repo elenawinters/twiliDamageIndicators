@@ -15,9 +15,17 @@ files {
     'html/style.css',
 }
 
+-- shared_scripts {
+--     'shared/Vector3.js'
+-- }
+
 client_scripts {
     'client/c_config.js',
     'client/c_damage.js'
+}
+
+server_scripts {
+    'server/s_damage.js'
 }
 
 -- client_script 'dmgconfig.lua'
