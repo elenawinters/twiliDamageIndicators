@@ -357,7 +357,6 @@ if (GAME == FIVEM) {
         // console.log(suspect);
         for (let [, victim] of Object.entries(victims)) {
             if (!IsPedAPlayer(suspect) || !IsPedAPlayer(victim)) { return; }
-            console.log('it is PVE');
             const dmg = CalculateHealthLost(victim);
             const position = CalculateDamagePosition(suspect, victim);
             const weaponHash = GetPedCauseOfDeath(victim);
@@ -394,7 +393,7 @@ if (GAME == FIVEM) {
 
         if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings.local_damage) { return; }
         // if (DebugFlags.prefer_pvp == true && !IsEntityAVehicle(victim)) { return; }
-        console.log('This should only show if it is a vehicle');
+        // console.log('This should only show if it is a vehicle');
 
         let offset = 0;
 
