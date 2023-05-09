@@ -307,10 +307,8 @@ function CalculateFadeRate(isMelee, weaponHash) {
     }
 }
 
-onNet('ewdamagenumbers:sync_others', (suspect, victim, dmg, position, fadeRate) => {
-    if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings.local_damage) { return; }
-
-    if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {
+function PrepareDamageText(victim, victimDied, dmg, position, fadeRate) {
+    if (IsEntityAPed(victim) && victimDied && dmg.h != 0) {
         DrawDamageText(position, Math.round(-dmg.h + 100), Settings.color.damage_entity, 1, fadeRate, victim)
     } else {
         DrawDamageText(position, Math.round(-dmg.h), Settings.color.damage_entity, 1, fadeRate, victim)
@@ -319,6 +317,18 @@ onNet('ewdamagenumbers:sync_others', (suspect, victim, dmg, position, fadeRate) 
     if (dmg.a != 0) {
         DrawDamageText(position, Math.round(-dmg.a), Settings.color.damage_armor, 1, fadeRate, victim)
     }
+    
+    if (victimDied) {
+        SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/1/14/Killsound.wav'});
+    } else {
+        SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/c/cf/Hitsound.wav'});
+    }
+
+}
+
+onNet('ewdamagenumbers:sync_others', (suspect, victim, dmg, position, fadeRate) => {
+    if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings.local_damage) { return; }
+    PrepareDamageText(victim, IsPedFatallyInjured(victim), dmg, position, fadeRate)
 
 });
 
@@ -429,15 +439,23 @@ if (GAME == FIVEM) {
         let dmg = CalculateHealthLost(victim)
         if (!skip_damage_render) {
             // if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
-            if (IsEntityAPed(victim) && victimDied && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
-                DrawDamageText(position, Math.round(-dmg.h + 100), Settings.color.damage_entity, 1, fadeRate, victim)
-            } else {
-                DrawDamageText(position, Math.round(-dmg.h), Settings.color.damage_entity, 1, fadeRate, victim)
-            }
+
+            PrepareDamageText(victim, victimDied, dmg, position, fadeRate)
+            // if (IsEntityAPed(victim) && victimDied && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
+            //     DrawDamageText(position, Math.round(-dmg.h + 100), Settings.color.damage_entity, 1, fadeRate, victim)
+            // } else {
+            //     DrawDamageText(position, Math.round(-dmg.h), Settings.color.damage_entity, 1, fadeRate, victim)
+            // }
             
-            if (dmg.a != 0) {
-                DrawDamageText(position, Math.round(-dmg.a), Settings.color.damage_armor, 1, fadeRate, victim)
-            }
+            // if (dmg.a != 0) {
+            //     DrawDamageText(position, Math.round(-dmg.a), Settings.color.damage_armor, 1, fadeRate, victim)
+            // }
+
+            // if (victimDied) {
+            //     SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/1/14/Killsound.wav'});
+            // } else {
+            //     SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/c/cf/Hitsound.wav'});
+            // }
         }
 
 

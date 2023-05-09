@@ -1,3 +1,4 @@
+// TODO: REWRITE THIS. IT SUCKS
 // on resource load, load the defaults
 
 function ensureBoolean(input) {
@@ -5,6 +6,12 @@ function ensureBoolean(input) {
     return (input === 'true')
   }
   return input
+}
+
+function playSound(url) {
+  var a = new Audio(url);
+  a.volume = 0.05;
+  a.play();
 }
 
 function loadDefaults() {
@@ -123,7 +130,10 @@ document.onkeyup = function (event) {
 
 window.addEventListener("message", function (event) {
   let data = event.data;
-  if (data.showdmgmenu) {
+  if (data.play_audio) {
+    playSound(data.play_audio);
+  }
+  else if (data.showdmgmenu) {
     let dynstate = ensureBoolean(localStorage.getItem('dynamicfade'));
     document.getElementById('dynamicfadeonoff').checked = dynstate;
     document.getElementById('fadespeedrange').disabled = dynstate;
