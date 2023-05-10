@@ -7,6 +7,10 @@ version '0.3.0'
 
 rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aware my resources *will* become incompatible once RedM ships.'
 
+dependencies {
+    'twiliCore'
+}
+
 ui_page 'html/ui.html'
 
 files {
@@ -24,9 +28,9 @@ client_scripts {
     'client/c_damage.js'
 }
 
-server_scripts {
-    'server/s_damage.js'
-}
+-- server_scripts {
+--     'server/s_damage.js'
+-- }
 
 -- client_script 'dmgconfig.lua'
 -- client_script 'dataview.lua'

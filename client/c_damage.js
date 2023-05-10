@@ -11,8 +11,6 @@ console.log('We are here')
 
 const Delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-let TrackedEntities = {};
-
 const BUILD = GetGameBuildNumber();
 const GAME = GetGameName();
 const FIVEM = 'fivem';
@@ -194,105 +192,6 @@ function DrawDamageText(position, value, color, size = 1, rate, entity) {
     });
 }
 
-function MergeVehicleHealths(veh) {
-    let wheel_healths = 0;
-    // print(GetVehicleNumberOfWheels(veh))
-    for (let i = 0; i < GetVehicleNumberOfWheels(veh); i++) {
-        wheel_healths += GetVehicleWheelHealth(veh, i);
-    };
-    let heli_healths = 0;
-    if (GetVehicleClass(veh) == 15) {  // if vehicle is helicopter, get it's health stats
-        heli_healths = GetHeliMainRotorHealth(veh) + GetHeliTailBoomHealth(veh) + GetHeliTailRotorHealth(veh);
-    }
-    return GetVehicleBodyHealth(veh) + GetVehicleEngineHealth(veh) + GetVehiclePetrolTankHealth(veh) + wheel_healths + heli_healths;
-}
-
-
-// console.log(`${key}: ${value}`);
-function TrackEntityHealth() {
-    // MERGE DIFFERENT ENTITY GROUPS
-    TrackedEntities = {};  // this is "temporary". basically, we reconstruck the tracked entities every time to avoid mem leaks
-    let entities = GetActivePlayers();
-
-    for (let [, value] of Object.entries(GetGamePool('CPed'))) {
-        entities.push(value);
-    }
-    for (let [, value] of Object.entries(GetGamePool('CVehicle'))) {
-        entities.push(value);
-    }
-
-    // UPDATE LAST KNOWN HEALTH VALUES
-    for (let [, ent] of Object.entries(entities)) {
-        if (IsEntityAPed(ent)) {
-            if (GAME == FIVEM) {
-                TrackedEntities[ent] = {h: GetEntityHealth(ent), a: GetPedArmour(ent)}
-            } else {
-                TrackedEntities[ent] = {h: GetEntityHealth(ent), a: 0}
-            }
-        } else if (IsEntityAVehicle(ent)) {
-            TrackedEntities[ent] = {h: MergeVehicleHealths(ent), a: 0}
-        }
-        // entities.push(value)
-    }
-
-    // UPDATE TRACKEDENTITIES TO REMOVE VOID ENTITIES
-    for (let [, ent] of Object.entries(TrackedEntities)) {
-        if (!entities.hasOwnProperty(ent) && TrackedEntities.hasOwnProperty(ent)) {
-            const index = TrackedEntities.indexOf(ent);
-            if (index > -1) {
-                TrackedEntities.splice(index, 1);
-                console.log(`Removed ${ent} from tracking list (index of ${index})`);
-            }
-        }
-    }
-}
-
-function CalculateHealthLost(ent) {
-    let health = 0;
-    let armor = 0;
-    if (IsEntityAPed(ent)) {
-        health = TrackedEntities[ent].h - GetEntityHealth(ent);
-        TrackedEntities[ent].h = GetEntityHealth(ent);
-        // print(health)
-        armor = TrackedEntities[ent].a - GetPedArmour(ent);
-        TrackedEntities[ent].a = GetPedArmour(ent);
-    } else if (IsEntityAVehicle(ent)) {
-        health = TrackedEntities[ent].h - MergeVehicleHealths(ent);
-        TrackedEntities[ent].h = MergeVehicleHealths(ent);
-    }
-    return {h: health, a: armor};
-}
-
-function CalculateDamagePosition(suspect, victim, victimDied) {
-    // let [, position] = GetPedLastWeaponImpactCoord(suspect);
-    // IsEntityAtCoord(victim, position, [10, 10, 10], 0, 1, 0)
-    let [, position] = GetPedLastWeaponImpactCoord(suspect);
-    // console.log(position)
-    // console.log(typeof position)
-    // if (IsEntityAtCoord(victim, position, [1, 1, 1], 0, 1, 0) || position == [0, 0, 0]) {
-    if (position[0] == 0 && position[1] == 0 && position[2] == 0) {
-        console.log('Position failure, trying backup')
-        position = GetEntityCoords(victim);
-        // position = [69, 69, 69]
-        if (IsEntityAPed(victim)) {
-            if (victimDied == undefined) { victimDied = IsPedFatallyInjured(victim); }
-            if (victimDied && GetPedCauseOfDeath(victim) == 0) {
-                position = GetPedBoneCoords(victim, 0x60F1);
-            } else {
-                let [success, bone] = GetPedLastDamageBone(victim);
-                if (success) {
-                    position = GetPedBoneCoords(victim, bone);
-                } else {
-                    position = GetPedBoneCoords(victim, 0x60F1);
-                }
-            }
-        }
-        // } else {
-        //     position = GetEntityCoords(victim);
-        // }
-    }
-    return position
-}
 
 function CalculateFadeRate(isMelee, weaponHash) {
     let fadeRate = Settings.fade_speed;
@@ -307,45 +206,32 @@ function CalculateFadeRate(isMelee, weaponHash) {
     }
 }
 
-function PrepareDamageText(victim, victimDied, dmg, position, fadeRate) {
-    if (IsEntityAPed(victim) && victimDied && dmg.h != 0) {
-        DrawDamageText(position, Math.round(-dmg.h + 100), Settings.color.damage_entity, 1, fadeRate, victim)
-    } else {
-        DrawDamageText(position, Math.round(-dmg.h), Settings.color.damage_entity, 1, fadeRate, victim)
-    }
+// function PrepareDamageText(victim, victimDied, dmg, position, fadeRate) {
+//     if (IsEntityAPed(victim) && victimDied && dmg.h != 0) {
+//         DrawDamageText(position, Math.round(-dmg.h + 100), Settings.color.damage_entity, 1, fadeRate, victim)
+//     } else {
+//         DrawDamageText(position, Math.round(-dmg.h), Settings.color.damage_entity, 1, fadeRate, victim)
+//     }
     
-    if (dmg.a != 0) {
-        DrawDamageText(position, Math.round(-dmg.a), Settings.color.damage_armor, 1, fadeRate, victim)
-    }
+//     if (dmg.a != 0) {
+//         DrawDamageText(position, Math.round(-dmg.a), Settings.color.damage_armor, 1, fadeRate, victim)
+//     }
     
-    if (victimDied) {
-        SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/1/14/Killsound.wav'});
-    } else {
-        SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/c/cf/Hitsound.wav'});
-    }
+//     if (victimDied) {
+//         SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/1/14/Killsound.wav'});
+//     } else {
+//         SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/c/cf/Hitsound.wav'});
+//     }
 
-}
+// }
 
-onNet('ewdamagenumbers:sync_others', (suspect, victim, dmg, position, fadeRate) => {
-    if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings.local_damage) { return; }
-    PrepareDamageText(victim, IsPedFatallyInjured(victim), dmg, position, fadeRate)
+// onNet('ewdamagenumbers:sync_others', (suspect, victim, dmg, position, fadeRate) => {
+//     if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings.local_damage) { return; }
+//     PrepareDamageText(victim, IsPedFatallyInjured(victim), dmg, position, fadeRate)
 
-});
+// });
 
 if (GAME == FIVEM) {
-    setTick(async () => {
-        await Delay(1000);
-        TrackEntityHealth();
-    })
-    // AddEventHandler('CEventEntityDamaged', function (entities, eventEntity, args)
-    //     print("CEventEntityDamaged \neventEnt: "..eventEntity.."\nentities: "..json.encode(entities).."\nargs: "..json.encode(args))
-    //     // print('Start of dump')
-    //     // for iter = 1, 8 - 1 do
-    //     //     print(args[iter])
-    //     // end
-    //     // print('End of dump')
-    // end)
-
     const writhe_says = ['Ouch!', 'Ow!', 'Ugh!'];
     on('CEventWrithe', function (args) {  // EXPAND
         console.log('Writhing')
@@ -361,120 +247,183 @@ if (GAME == FIVEM) {
         })
 
     })
+}
 
-    on('CEventDamage', function (victims, suspect) {
-        // console.log(victims);
-        // console.log(suspect);
-        for (let [, victim] of Object.entries(victims)) {
-            if (!IsPedAPlayer(suspect) || !IsPedAPlayer(victim)) { return; }
-            const dmg = CalculateHealthLost(victim);
-            const position = CalculateDamagePosition(suspect, victim);
-            const weaponHash = GetPedCauseOfDeath(victim);
-            const isMelee = GetWeaponDamageType(weaponHash) == 2;
-            const fadeRate = CalculateFadeRate(isMelee, weaponHash);
 
-            emitNet("ewdamagenumbers:update_others", suspect, victim, dmg, position, fadeRate);
+onNet('twiliCore:damage:event', (suspect, victim, situation) => {
+    if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings.local_damage) { return; }
+    const fadeRate = CalculateFadeRate(situation.isMelee, situation.weaponHash);
+    let skip_damage_render = false
+    if (Settings.ignore_vehicles) {
+        if (IsEntityAVehicle(victim.entity)) {
+            skip_damage_render = true
         }
-        // if (!skip_damage_render) {
-        //     if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {
-        //         DrawDamageText(position, Math.round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
-        //     } else {
-        //         DrawDamageText(position, Math.round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
-        //     }
-            
-        //     if (dmg.a != 0) {
-        //         DrawDamageText(position, Math.round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
-        //     }
+    }
+
+    let killSound = 'https://wiki.teamfortress.com/w/images/1/14/Killsound.wav';
+    let hitSound = 'https://wiki.teamfortress.com/w/images/c/cf/Hitsound.wav';
+
+    if (IsEntityAPed(victim.entity)) {
+        SendNUIMessage({play_audio: situation.isDead ? killSound : hitSound});
+    }
+
+    // let dmg = CalculateHealthLost(victim.entity)
+    if (!skip_damage_render) {
+        // if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
+        if (IsEntityAPed(victim.entity) && situation.isDead && situation.healthLost.h != 0) {
+            DrawDamageText(situation.position, Math.round(-situation.healthLost.h + 100), Settings.color.damage_entity, 1, fadeRate, victim.entity)
+        } else {
+            DrawDamageText(situation.position, Math.round(-situation.healthLost.h), Settings.color.damage_entity, 1, fadeRate, victim.entity)
+        }
+        
+        if (situation.healthLost.a != 0) {
+            DrawDamageText(situation.position, Math.round(-situation.healthLost.a), Settings.color.damage_armor, 1, fadeRate, victim.entity)
+        }
+        
+        // if (situation.victimDied) {
+        //     SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/1/14/Killsound.wav'});
+        // } else {
+        //     SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/c/cf/Hitsound.wav'});
         // }
 
-    })
+        // PrepareDamageText(victim.entity, situation.isDead, situation.healthLost, situation.position, fadeRate)
+
+    }
+
+    switch (situation.damageTypeSecondary) {
+        case 93:
+            DrawDamageText(situation.position, 'Pop!', Settings.color.damage_vehicle_ding, 0.5, fadeRate, victim.entity) // tire damage
+            break;
+        case 116:
+        case 117:  // 117 happens with the exhaust pipe of the Imponte Pheonix. No idea what this is, putting it here for now.
+            DrawDamageText(situation.position, 'Ding!', Settings.color.damage_vehicle_ding, 0.5, fadeRate, victim.entity)  // general vehicle damage
+            break;
+        case 120:
+        case 121:
+        case 122:
+            DrawDamageText(situation.position, 'Smash!', Settings.color.damage_vehicle_ding, 0.5, fadeRate, victim.entity)  // window damage
+            break;
+    }
+
+    // emitNet("ewdamagenumbers:update_others", suspect, victim, situation.healthLost, situation.position, fadeRate);
+    // PrepareDamageText(victim.entity, situation.isDead, situation.healthLost, situation.position, fadeRate)
+
+});
+// onNet('twiliCore:damage:event')
+
+    // on('CEventDamage', function (victims, suspect) {
+    //     // console.log(victims);
+    //     // console.log(suspect);
+    //     for (let [, victim] of Object.entries(victims)) {
+    //         if (!IsPedAPlayer(suspect) || !IsPedAPlayer(victim)) { return; }
+    //         const dmg = CalculateHealthLost(victim);
+    //         const position = CalculateDamagePosition(suspect, victim);
+    //         const weaponHash = GetPedCauseOfDeath(victim);
+    //         const isMelee = GetWeaponDamageType(weaponHash) == 2;
+    //         const fadeRate = CalculateFadeRate(isMelee, weaponHash);
+
+    //         emitNet("ewdamagenumbers:update_others", suspect, victim, dmg, position, fadeRate);
+    //     }
+    //     // if (!skip_damage_render) {
+    //     //     if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {
+    //     //         DrawDamageText(position, Math.round(-dmg.h + 100), Settings['color']['damage_entity'], 1, fadeRate, victim)
+    //     //     } else {
+    //     //         DrawDamageText(position, Math.round(-dmg.h), Settings['color']['damage_entity'], 1, fadeRate, victim)
+    //     //     }
+            
+    //     //     if (dmg.a != 0) {
+    //     //         DrawDamageText(position, Math.round(-dmg.a), Settings['color']['damage_armor'], 1, fadeRate, victim)
+    //     //     }
+    //     // }
+
+    // })
 
     // use GetWeaponTimeBetweenShots to get dynamic fade speed per weapon
     // use log 0.7 (x) to get Fade Speed from TimeBetweenShots. If output is below 0.1, keep it at 0.1. Refine later
-    on('gameEventTriggered', function (eventName, data) {
-        if (eventName != 'CEventNetworkEntityDamage') { return; }
-        // console.log(Settings.color.damage_entity);
+    // on('gameEventTriggered', function (eventName, data) {
+    //     if (eventName != 'CEventNetworkEntityDamage') { return; }
+    //     // console.log(Settings.color.damage_entity);
 
-        const victim = data[0];
-        // console.log(typeof victim);
-        const suspect = data[1];
+    //     const victim = data[0];
+    //     // console.log(typeof victim);
+    //     const suspect = data[1];
 
-        if (IsPedAPlayer(suspect) && IsPedAPlayer(victim)) { return; }
+    //     if (IsPedAPlayer(suspect) && IsPedAPlayer(victim)) { return; }
 
-        if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings.local_damage) { return; }
-        // if (DebugFlags.prefer_pvp == true && !IsEntityAVehicle(victim)) { return; }
-        // console.log('This should only show if it is a vehicle');
+    //     if (suspect != PlayerPedId() && victim != PlayerPedId() && Settings.local_damage) { return; }
+    //     // if (DebugFlags.prefer_pvp == true && !IsEntityAVehicle(victim)) { return; }
+    //     // console.log('This should only show if it is a vehicle');
 
-        let offset = 0;
+    //     let offset = 0;
 
-        if (BUILD >= 2060) {
-            offset++;
-            if (BUILD >= 2189) {
-                offset++;
-            }
-        }
+    //     if (BUILD >= 2060) {
+    //         offset++;
+    //         if (BUILD >= 2189) {
+    //             offset++;
+    //         }
+    //     }
 
-        const victimDied = data[3 + offset];
-        const weaponHash = data[4 + offset];
-        const isMelee = data[9 + offset];
-        const damageType = data[10 + offset];
+    //     const victimDied = data[3 + offset];
+    //     const weaponHash = data[4 + offset];
+    //     const isMelee = data[9 + offset];
+    //     const damageType = data[10 + offset];
 
-        // Would it be funny to render blood drop emotes twice a second for ten seconds when the below is true?
-        // Yes.
-        // Am I gonna do it...?
-        // Maybe, when I clean up everything. It'll be an easter egg that can be toggled
-        // console.log(`victimDied? ${victimDied}`)
+    //     // Would it be funny to render blood drop emotes twice a second for ten seconds when the below is true?
+    //     // Yes.
+    //     // Am I gonna do it...?
+    //     // Maybe, when I clean up everything. It'll be an easter egg that can be toggled
+    //     // console.log(`victimDied? ${victimDied}`)
 
-        const position = CalculateDamagePosition(suspect, victim, victimDied);
+    //     const position = CalculateDamagePosition(suspect, victim, victimDied);
 
-        const fadeRate = CalculateFadeRate(isMelee, weaponHash);
+    //     const fadeRate = CalculateFadeRate(isMelee, weaponHash);
 
-        let skip_damage_render = false
-        if (Settings.ignore_vehicles) {
-            if (IsEntityAVehicle(victim)) {
-                skip_damage_render = true
-            }
-        }
+//         let skip_damage_render = false
+//         if (Settings.ignore_vehicles) {
+//             if (IsEntityAVehicle(victim)) {
+//                 skip_damage_render = true
+//             }
+//         }
 
-        let dmg = CalculateHealthLost(victim)
-        if (!skip_damage_render) {
-            // if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
+//         let dmg = CalculateHealthLost(victim)
+//         if (!skip_damage_render) {
+//             // if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
 
-            PrepareDamageText(victim, victimDied, dmg, position, fadeRate)
-            // if (IsEntityAPed(victim) && victimDied && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
-            //     DrawDamageText(position, Math.round(-dmg.h + 100), Settings.color.damage_entity, 1, fadeRate, victim)
-            // } else {
-            //     DrawDamageText(position, Math.round(-dmg.h), Settings.color.damage_entity, 1, fadeRate, victim)
-            // }
+//             PrepareDamageText(victim, victimDied, dmg, position, fadeRate)
+//             // if (IsEntityAPed(victim) && victimDied && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
+//             //     DrawDamageText(position, Math.round(-dmg.h + 100), Settings.color.damage_entity, 1, fadeRate, victim)
+//             // } else {
+//             //     DrawDamageText(position, Math.round(-dmg.h), Settings.color.damage_entity, 1, fadeRate, victim)
+//             // }
             
-            // if (dmg.a != 0) {
-            //     DrawDamageText(position, Math.round(-dmg.a), Settings.color.damage_armor, 1, fadeRate, victim)
-            // }
+//             // if (dmg.a != 0) {
+//             //     DrawDamageText(position, Math.round(-dmg.a), Settings.color.damage_armor, 1, fadeRate, victim)
+//             // }
 
-            // if (victimDied) {
-            //     SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/1/14/Killsound.wav'});
-            // } else {
-            //     SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/c/cf/Hitsound.wav'});
-            // }
-        }
+//             // if (victimDied) {
+//             //     SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/1/14/Killsound.wav'});
+//             // } else {
+//             //     SendNUIMessage({play_audio: 'https://wiki.teamfortress.com/w/images/c/cf/Hitsound.wav'});
+//             // }
+//         }
 
 
-        switch (damageType) {
-            case 93:
-                DrawDamageText(position, 'Pop!', Settings.color.damage_vehicle_ding, 0.5, fadeRate, victim) // tire damage
-                break;
-            case 116:
-            case 117:  // 117 happens with the exhaust pipe of the Imponte Pheonix. No idea what this is, putting it here for now.
-                DrawDamageText(position, 'Ding!', Settings.color.damage_vehicle_ding, 0.5, fadeRate, victim)  // general vehicle damage
-                break;
-            case 120:
-            case 121:
-            case 122:
-                DrawDamageText(position, 'Smash!', Settings.color.damage_vehicle_ding, 0.5, fadeRate, victim)  // window damage
-                break;
-        }
-    })
-}
+//         switch (damageType) {
+//             case 93:
+//                 DrawDamageText(position, 'Pop!', Settings.color.damage_vehicle_ding, 0.5, fadeRate, victim) // tire damage
+//                 break;
+//             case 116:
+//             case 117:  // 117 happens with the exhaust pipe of the Imponte Pheonix. No idea what this is, putting it here for now.
+//                 DrawDamageText(position, 'Ding!', Settings.color.damage_vehicle_ding, 0.5, fadeRate, victim)  // general vehicle damage
+//                 break;
+//             case 120:
+//             case 121:
+//             case 122:
+//                 DrawDamageText(position, 'Smash!', Settings.color.damage_vehicle_ding, 0.5, fadeRate, victim)  // window damage
+//                 break;
+//         }
+//     })
+// }
 // } else if (GAME == REDM) {
 //     function RenderStepRDR3(victim, suspect, defaultPosition, value) {
 //         let positon, entity = RaycastFromPlayer();
