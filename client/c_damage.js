@@ -40,7 +40,7 @@ RegisterNuiCallback('ignorevehiclestatus', (data) => {
     Settings.ignore_vehicles = data.vehicleignore
 });
 
-RegisterNuiCallback('fadespeedstatu', (data) => {
+RegisterNuiCallback('fadespeedstatus', (data) => {
     Settings.fade_speed = data.fadespeed
 });
 
