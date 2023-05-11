@@ -11,12 +11,7 @@ console.log('We are here')
 
 const Delay = (ms) => new Promise(res => setTimeout(res, ms));
 
-const BUILD = GetGameBuildNumber();
-const GAME = GetGameName();
-const FIVEM = 'fivem';
-const REDM = 'redm';
-
-console.log(`Code path is set to ${GAME}`);
+console.log(`Code path is set to ${exports.twiliCore.GAME()}`);
 
 
 RegisterCommand('dmghud', (source, args) => {
@@ -157,7 +152,7 @@ function DrawDamageText(position, value, color, size = 1, rate, entity) {
         // local scale = (1 / distance) * (perspectiveScale) * (1 / GetFinalRenderedCamFov()) * 75
 
         if (onScreen) {
-            if (GAME == FIVEM) {
+            if (exports.twiliCore.GAME() == exports.twiliCore.FIVEM()) {
                 SetTextScale(scaleMultiplier * 0.0, 0.35 * scaleMultiplier);
                 // SetTextScale(0.0, scale)
                 SetTextFont(font);
@@ -172,7 +167,7 @@ function DrawDamageText(position, value, color, size = 1, rate, entity) {
                 EndTextCommandDisplayText(_x + positionOffset[0], _y + positionOffset[1]);
                 // EndTextCommandDisplayText(_x, _y);
                 // console.log('Did a render');
-            } else if (GAME == REDM) {
+            } else if (exports.twiliCore.GAME() == exports.twiliCore.REDM()) {
                 let vstr = CreateVarString(10, "LITERAL_STRING", tostring(value));  // the game will crash if VALUE is not a string
                 SetTextColor(color[0], color[1], color[2], currentAlpha);
                 SetTextScale(parseInt(scaleMultiplier * 0.0), parseInt(0.35 * scaleMultiplier));
@@ -231,7 +226,7 @@ function CalculateFadeRate(isMelee, weaponHash) {
 
 // });
 
-if (GAME == FIVEM) {
+if (exports.twiliCore.GAME() == exports.twiliCore.FIVEM()) {
     const writhe_says = ['Ouch!', 'Ow!', 'Ugh!'];
     on('CEventWrithe', function (args) {  // EXPAND
         console.log('Writhing')
@@ -271,13 +266,13 @@ onNet('twiliCore:damage:event', (suspect, victim, situation) => {
     if (!skip_damage_render) {
         // if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
         if (IsEntityAPed(victim.entity) && situation.isDead && situation.healthLost.h != 0) {
-            DrawDamageText(situation.position, Math.round(-situation.healthLost.h + 100), Settings.color.damage_entity, 1, fadeRate, victim.entity)
+            DrawDamageText(situation.position, exports.twiliCore.math0round(-situation.healthLost.h + 100, Settings.precision), Settings.color.damage_entity, 1, fadeRate, victim.entity)
         } else {
-            DrawDamageText(situation.position, Math.round(-situation.healthLost.h), Settings.color.damage_entity, 1, fadeRate, victim.entity)
+            DrawDamageText(situation.position, exports.twiliCore.math0round(-situation.healthLost.h, Settings.precision), Settings.color.damage_entity, 1, fadeRate, victim.entity)
         }
         
         if (situation.healthLost.a != 0) {
-            DrawDamageText(situation.position, Math.round(-situation.healthLost.a), Settings.color.damage_armor, 1, fadeRate, victim.entity)
+            DrawDamageText(situation.position, exports.twiliCore.math0round(-situation.healthLost.a, Settings.precision), Settings.color.damage_armor, 1, fadeRate, victim.entity)
         }
         
         // if (situation.victimDied) {
