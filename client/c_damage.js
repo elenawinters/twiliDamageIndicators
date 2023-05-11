@@ -266,13 +266,13 @@ onNet('twiliCore:damage:event', (suspect, victim, situation) => {
     if (!skip_damage_render) {
         // if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
         if (IsEntityAPed(victim.entity) && situation.isDead && situation.healthLost.h != 0) {
-            DrawDamageText(situation.position, exports.twiliCore.math0round(-situation.healthLost.h + 100, Settings.precision), Settings.color.damage_entity, 1, fadeRate, victim.entity)
+            DrawDamageText(situation.position, exports.twiliCore.math().round(-situation.healthLost.h + 100, Settings.precision), Settings.color.damage_entity, 1, fadeRate, victim.entity)
         } else {
-            DrawDamageText(situation.position, exports.twiliCore.math0round(-situation.healthLost.h, Settings.precision), Settings.color.damage_entity, 1, fadeRate, victim.entity)
+            DrawDamageText(situation.position, exports.twiliCore.math().round(-situation.healthLost.h, Settings.precision), Settings.color.damage_entity, 1, fadeRate, victim.entity)
         }
         
         if (situation.healthLost.a != 0) {
-            DrawDamageText(situation.position, exports.twiliCore.math0round(-situation.healthLost.a, Settings.precision), Settings.color.damage_armor, 1, fadeRate, victim.entity)
+            DrawDamageText(situation.position, exports.twiliCore.math().round(-situation.healthLost.a, Settings.precision), Settings.color.damage_armor, 1, fadeRate, victim.entity)
         }
         
         // if (situation.victimDied) {
