@@ -14,4 +14,6 @@ When you kill a ped, the damage number will jitter around.
 
 ## TODO
 
-The potential for a rewrite to JavaScript exists, and is at least partially done. Unfortunately, dataview is what is holding me back for the RedM portion of the rewrite.
+haha nothing i just haven't updated any of this
+
+fivem/redm compatible
