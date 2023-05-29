@@ -24,6 +24,7 @@ files {
 -- }
 
 client_scripts {
+    'client/c_globals.js',
     'client/c_config.js',
     'client/c_damage.js'
 }

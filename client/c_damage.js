@@ -9,9 +9,7 @@
 
 console.log('We are here')
 
-const Delay = (ms) => new Promise(res => setTimeout(res, ms));
-
-console.log(`Code path is set to ${exports.twiliCore.GAME()}`);
+console.log(`Code path is set to ${GAME}`);
 
 
 RegisterCommand('dmghud', (source, args) => {
@@ -152,7 +150,7 @@ function DrawDamageText(position, value, color, size = 1, rate, entity) {
         // local scale = (1 / distance) * (perspectiveScale) * (1 / GetFinalRenderedCamFov()) * 75
 
         if (onScreen) {
-            if (exports.twiliCore.GAME() == exports.twiliCore.FIVEM()) {
+            if (GAME == FIVEM) {
                 SetTextScale(scaleMultiplier * 0.0, 0.35 * scaleMultiplier);
                 // SetTextScale(0.0, scale)
                 SetTextFont(font);
@@ -167,7 +165,7 @@ function DrawDamageText(position, value, color, size = 1, rate, entity) {
                 EndTextCommandDisplayText(_x + positionOffset[0], _y + positionOffset[1]);
                 // EndTextCommandDisplayText(_x, _y);
                 // console.log('Did a render');
-            } else if (exports.twiliCore.GAME() == exports.twiliCore.REDM()) {
+            } else if (GAME == REDM) {
                 let vstr = CreateVarString(10, "LITERAL_STRING", value.toString());  // the game will crash if VALUE is not a string
                 SetTextColor(color[0], color[1], color[2], currentAlpha);
                 SetTextScale(scaleMultiplier * 0.0, 0.35 * scaleMultiplier);
@@ -226,7 +224,7 @@ function CalculateFadeRate(isMelee, weaponHash) {
 
 // });
 
-if (exports.twiliCore.GAME() == exports.twiliCore.FIVEM()) {
+if (GAME == FIVEM) {
     const writhe_says = ['Ouch!', 'Ow!', 'Ugh!'];
     on('CEventWrithe', function (args) {  // EXPAND
         console.log('Writhing')
@@ -247,7 +245,7 @@ if (exports.twiliCore.GAME() == exports.twiliCore.FIVEM()) {
 
 onNet('twiliCore:damage:event', (suspect, victim, situation) => {
     if (suspect.entity != PlayerPedId() && victim.entity != PlayerPedId() && Settings.local_damage) { return; }
-    const fadeRate = exports.twiliCore.GAME() == exports.twiliCore.FIVEM() ? CalculateFadeRate(situation.isMelee, situation.weaponHash) : 1;
+    const fadeRate = GAME == FIVEM ? CalculateFadeRate(situation.isMelee, situation.weaponHash) : 1;
     let skip_damage_render = false
     if (Settings.ignore_vehicles) {
         if (IsEntityAVehicle(victim.entity)) {
@@ -266,7 +264,7 @@ onNet('twiliCore:damage:event', (suspect, victim, situation) => {
     // let dmg = CalculateHealthLost(victim.entity)
     if (!skip_damage_render) {
         // if (IsEntityAPed(victim) && IsPedFatallyInjured(victim) && dmg.h != 0) {  // consider using victimDied instead of IsPedFatallyInjured
-        if (exports.twiliCore.GAME() == exports.twiliCore.FIVEM() && IsEntityAPed(victim.entity) && situation.isDead && situation.healthLost.h != 0) {
+        if (GAME == FIVEM && IsEntityAPed(victim.entity) && situation.isDead && situation.healthLost.h != 0) {
             DrawDamageText(situation.position, exports.twiliCore.math().round(-situation.healthLost.h + 100, Settings.precision), Settings.color.damage_entity, 1, fadeRate, victim.entity)
         } else {
             DrawDamageText(situation.position, exports.twiliCore.math().round(-situation.healthLost.h, Settings.precision), Settings.color.damage_entity, 1, fadeRate, victim.entity)
