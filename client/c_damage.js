@@ -230,12 +230,12 @@ if (GAME == FIVEM) {
         console.log('Writhing')
         const thread = setTick(async () => {
             const victim = args[0];
-            if (!IsPedFatallyInjured(victim)) {
-                // items[Math.floor(Math.random()*items.length)]
-                // Colors likely need to be adjusted. TODO: Add a color wheel to the settings menu for all color related settings
-                DrawDamageText(GetPedBoneCoords(victim, 0xFE2C), writhe_says[Math.floor(Math.random()*writhe_says.length)], Settings.color.entity_writhe, 0.75);
-                // Delay(500);
-            } else { clearTick(thread); }
+            if (IsPedFatallyInjured(victim)) { clearTick(thread); }
+            // items[Math.floor(Math.random()*items.length)]
+            // Colors likely need to be adjusted. TODO: Add a color wheel to the settings menu for all color related settings
+            DrawDamageText(GetPedBoneCoords(victim, 0xFE2C), writhe_says[Math.floor(Math.random()*writhe_says.length)], Settings.color.entity_writhe, 0.75);
+            // Delay(500);
+
             await Delay(500);
         })
 
