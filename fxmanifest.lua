@@ -2,8 +2,8 @@ fx_version 'cerulean'
 games { 'gta5', 'rdr3' }
 
 author 'Elena Winters'
-description 'Shows amount of damage you dealt to an entity next to that entity'
-version '0.3.0+23.6.27'
+description 'Hitmarkers in FiveM/RedM. Shows amount of damage you dealt to an entity next to that entity'
+version '0.3.0+23.7.10'
 
 rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aware my resources *will* become incompatible once RedM ships.'
 
@@ -25,16 +25,10 @@ shared_scripts {
 
 client_scripts {
     '@twiliCore/client/c_globals.js',
-    -- 'client/c_globals.js',
     'client/c_config.js',
-    'client/c_damage.js'
+    'client/c_damage.js',
+
+    'dmghud.lua'
 }
 
--- server_scripts {
---     'server/s_damage.js'
--- }
-
--- client_script 'dmgconfig.lua'
--- client_script 'dataview.lua'
--- client_script 'dmgclient.lua'
-client_script 'dmghud.lua'
+-- dmghud has yet to be ported over to JavaScript. It will likely be moved into twiliDebug

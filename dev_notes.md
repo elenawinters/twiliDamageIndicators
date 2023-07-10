@@ -1,3 +1,7 @@
+# TODO: RENAME SCRIPT. IT NOW HAS HITMARKER AUDIO, AND THE NAME NO LONGER FITS.
+
+# These devnotes where from when I initially started work on this project and do not represent what the script currently does.
+
 This is a script I started working on a few months ago, out of the curious idea that maybe I could make an idea work; displaying the amount of damage you did to an entity, next to that entity.
 
 Within a week, I had a decent prototype, but I haven't felt ready to release it until now.
