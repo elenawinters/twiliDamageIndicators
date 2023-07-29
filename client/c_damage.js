@@ -47,20 +47,20 @@ RegisterNuiCallback('precisionstatus', (data) => {
 
 RegisterCommand('testfont', (source, args) => {
     Settings.render_font = parseInt(args[0])
-    TriggerEvent('chat:addMessage', {
+    emit('chat:addMessage', {
         color: [255, 0, 0],
         multiline: true,
-        args: {"Debug": `Pbttt testing font number ${Settings.render_font}`}
+        args: ["Debug", `Pbttt testing font number ${Settings.render_font}`]
     });
 });
 
 
 RegisterCommand('testoffset', (source, args) => {
     Settings.offset_intensity = parseInt(args[0])
-    TriggerEvent('chat:addMessage', {
+    emit('chat:addMessage', {
         color: [255, 0, 0],
         multiline: true,
-        args: {"Debug": `Random offset intensity is now ${Settings.offset_intensity}`}
+        args: ["Debug", `Random offset intensity is now ${Settings.offset_intensity}`]
     });
 });
 
