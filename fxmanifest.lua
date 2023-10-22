@@ -3,7 +3,7 @@ games { 'gta5', 'rdr3' }
 
 author 'Elena Winters'
 description 'Hitmarkers in FiveM/RedM. Shows amount of damage you dealt to an entity next to that entity'
-version '0.3.0+23.7.10'
+version '0.3.0+23.10.21'
 
 rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aware my resources *will* become incompatible once RedM ships.'
 

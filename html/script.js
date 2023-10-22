@@ -1,5 +1,6 @@
 // TODO: REWRITE THIS. IT SUCKS
 // on resource load, load the defaults
+const scriptName = 'twiliDamageIndicators'
 
 function ensureBoolean(input) {
   if (typeof(input) == 'string') {
@@ -29,7 +30,7 @@ function sendDynamicFade(dynamic_fade) {
   }
   
   let xhr = new XMLHttpRequest();
-  xhr.open("POST", "https://ewdamagenumbers/dynamicfadestatus", true);
+  xhr.open("POST", `https://${scriptName}/dynamicfadestatus`, true);
   xhr.send(JSON.stringify({'dynamicfade': ensureBoolean(dynamic_fade)}));
 }
 
@@ -40,7 +41,7 @@ function sendFadeSpeed(fade_speed) {
   }
 
   let xhr = new XMLHttpRequest();
-  xhr.open("POST", "https://ewdamagenumbers/fadespeedstatus", true);
+  xhr.open("POST", `https://${scriptName}/fadespeedstatus`, true);
   xhr.send(JSON.stringify({'fadespeed': Number(fade_speed)}));
 }
 
@@ -51,7 +52,7 @@ function sendLocalDamage(damage_local) {
   }
 
   let xhr = new XMLHttpRequest();
-  xhr.open("POST", "https://ewdamagenumbers/localdmgstatus", true);
+  xhr.open("POST", `https://${scriptName}/localdmgstatus`, true);
   xhr.send(JSON.stringify({'localdmg': ensureBoolean(damage_local)}));
 }
 
@@ -62,7 +63,7 @@ function sendPrecision(precision) {
   }
 
   let xhr = new XMLHttpRequest();
-  xhr.open("POST", "https://ewdamagenumbers/precisionstatus", true);
+  xhr.open("POST", `https://${scriptName}/precisionstatus`, true);
   xhr.send(JSON.stringify({'precision': Number(precision)}));
 }
 
@@ -73,7 +74,7 @@ function sendVehicleIgnore(ignore_vehicle) {
   }
 
   let xhr = new XMLHttpRequest();
-  xhr.open("POST", "https://ewdamagenumbers/ignorevehiclestatus", true);
+  xhr.open("POST", `https://${scriptName}/ignorevehiclestatus`, true);
   xhr.send(JSON.stringify({'vehicleignore': ensureBoolean(ignore_vehicle)}));
 }
 
@@ -117,7 +118,7 @@ function precisionupdate(precision) {
 // other stuff
 
 const CancelMenu = () => {
-  $.post(`https://ewdamagenumbers/cancel`);
+  $.post(`https://${scriptName}/cancel`);
 };
 
 document.onkeyup = function (event) {
