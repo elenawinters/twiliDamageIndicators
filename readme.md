@@ -1,4 +1,4 @@
-# EW Damage Numbers
+# twiliDamageIndicators
 
 This FiveM/RedM script displays damage next to entities that you have hurt.
 
